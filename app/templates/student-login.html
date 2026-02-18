@@ -37,7 +37,7 @@
     <section class="card">
       <div class="tabs">
         <button id="tLogin" class="tab active">Login</button>
-        <button id="tRegister" class="tab">Register</button>
+        <button id="tRegister" class="tab">Create Account</button>
       </div>
 
       <section id="loginPanel" class="panel active">
@@ -123,9 +123,9 @@
         }));
         regOtpBlock.classList.remove('hidden');
         if (d.otp_debug) {
-          outMsg({ status: 'otp_sent', expires_at: d.expires_at, otp_debug: d.otp_debug });
+          show({ status: 'otp_sent', expires_at: d.expires_at, otp_debug: d.otp_debug });
         } else {
-          outMsg({ status: 'otp_sent', expires_at: d.expires_at });
+          show({ status: 'otp_sent', expires_at: d.expires_at });
         }
         console.log('student verify', d);
       } catch (e) { show(e.message || String(e)); }

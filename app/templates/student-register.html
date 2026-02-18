@@ -117,7 +117,20 @@
     loginBtn.onclick = async () => {
       if(!req([login_identifier.value,login_password.value])) return outMsg('Please enter email/phone and password.');
       const r = await fetch('/api/student/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifier:login_identifier.value,password:login_password.value})});
-      try{ const d = await read(r); outMsg(d); console.log('student login', d); if(d.student_id){ localStorage.setItem('student_id', d.student_id); if(d.token) localStorage.setItem('student_token', d.token); location.href='/student/dashboard'; } }catch(e){ outMsg(`Invalid credentials. ${e.message}`); }
+      try{
+        const d = await read(r);
+        outMsg(d);
+        console.log('student login', d);
+        if(d.student_id){
+          localStorage.setItem('student_id', d.student_id);
+          if(d.token) localStorage.setItem('student_token', d.token);
+          location.href='/student/dashboard';
+        }
+      }catch(e){
+        const msg = e && e.message ? e.message : 'Invalid credentials';
+        outMsg(msg);
+        console.error('student login failed', msg);
+      }
     };
 
   </script>

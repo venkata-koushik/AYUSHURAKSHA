@@ -41,13 +41,14 @@ class RelationalService:
         self.otp_store: dict[str, dict[str, str]] = defaultdict(dict)
 
     def _hash(self, value: str) -> str:
-        # Demo mode: force a known password for all accounts for easy testing.
+        # Optional demo mode: only force a fixed password when explicitly enabled.
         forced = os.getenv("DEMO_FIXED_PASSWORD", "").strip()
-        if forced:
+        force_fixed = os.getenv("DEMO_FORCE_FIXED_PASSWORD", "").strip().lower() in {"1", "true", "yes", "on"}
+        if forced and force_fixed:
             return security_service.hash_password(forced)
         return security_service.hash_password(value)
 
-    def _verify_hash(self, plain: str, hashed: str) -> bool:
+    def _matches_hash_compat(self, plain: str, hashed: str) -> bool:
         try:
             return security_service.verify_password(plain, hashed)
         except Exception:
@@ -57,6 +58,15 @@ class RelationalService:
                 return legacy_sha256 == hashed.lower()
             # Last-resort compatibility for accidental plain-text demo rows.
             return plain == hashed
+
+    def _verify_hash(self, plain: str, hashed: str) -> bool:
+        if self._matches_hash_compat(plain, hashed):
+            return True
+        # Migration path for rows created while demo fixed-password mode was active.
+        forced = os.getenv("DEMO_FIXED_PASSWORD", "").strip()
+        if forced and plain != forced and self._matches_hash_compat(forced, hashed):
+            return True
+        return False
 
     def _is_bcrypt_hash(self, value: str) -> bool:
         return value.startswith("$2a$") or value.startswith("$2b$") or value.startswith("$2y$")
@@ -171,6 +181,10 @@ class RelationalService:
         patient = db.scalar(q)
         if not patient or not self._verify_hash(password, patient.password_hash):
             raise ValueError("Invalid credentials")
+        forced = os.getenv("DEMO_FIXED_PASSWORD", "").strip()
+        if forced and password != forced and self._matches_hash_compat(forced, patient.password_hash):
+            patient.password_hash = self._hash(password)
+            db.commit()
         if not self._is_bcrypt_hash(patient.password_hash):
             patient.password_hash = self._hash(password)
             db.commit()
@@ -327,6 +341,10 @@ class RelationalService:
         doctor = self._find_doctor_by_identifier(db, identifier.strip())
         if not doctor or not self._verify_hash(password, doctor.password_hash):
             raise ValueError("Invalid credentials")
+        forced = os.getenv("DEMO_FIXED_PASSWORD", "").strip()
+        if forced and password != forced and self._matches_hash_compat(forced, doctor.password_hash):
+            doctor.password_hash = self._hash(password)
+            db.commit()
         if not self._is_bcrypt_hash(doctor.password_hash):
             doctor.password_hash = self._hash(password)
             db.commit()
@@ -641,6 +659,10 @@ class RelationalService:
         student = self._find_student_by_identifier(db, identifier.lower().strip())
         if not student or not self._verify_hash(password, student.password_hash):
             raise ValueError("Invalid credentials")
+        forced = os.getenv("DEMO_FIXED_PASSWORD", "").strip()
+        if forced and password != forced and self._matches_hash_compat(forced, student.password_hash):
+            student.password_hash = self._hash(password)
+            db.commit()
         if not self._is_bcrypt_hash(student.password_hash):
             student.password_hash = self._hash(password)
             db.commit()
