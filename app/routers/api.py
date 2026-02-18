@@ -506,7 +506,7 @@ class ChatSaveRequest(BaseModel):
 
 class VideoJoinRequest(BaseModel):
     session_id: str
-    requester_id: str
+    requester_id: str | None = None
 
 
 @router.get("/session/status/{session_id}")
@@ -1945,12 +1945,13 @@ def session_video_join(payload: VideoJoinRequest, db: Session = Depends(get_db),
         if not session:
             raise ValueError("Session not found")
         _authorize_session_actor(user, session, {"patient", "student"})
-        out = relational_service.video_join_info(db, payload.session_id, payload.requester_id)
+        requester_id = str(user.get("sub", "")).strip()
+        out = relational_service.video_join_info(db, payload.session_id, requester_id)
         _log_consultation_event(
             db,
             payload.session_id,
             "VIDEO_JOIN",
-            {"requester_id": payload.requester_id, "mode": out.get("mode", "video")},
+            {"requester_id": requester_id, "mode": out.get("mode", "video")},
         )
         return out
     except ValueError as exc:

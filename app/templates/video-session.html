@@ -112,6 +112,7 @@
     function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',2200); }
     function setConn(name, text){ conn.className='status ' + name; connText.textContent=text; }
     function hideToast(){ const t = document.getElementById('toast'); t.style.display = 'none'; }
+    function authHeaders(){ return authToken ? { Authorization: 'Bearer ' + authToken } : {}; }
 
     async function parse(res){
       const txt = await res.text();
@@ -200,6 +201,12 @@
 
     async function setupPeer(){
       if(!sessionId) throw new Error('No active session id.');
+      if(!requesterId) throw new Error('Missing requester identity. Please login again.');
+      await parse(await fetch('/api/session/video-join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ session_id: sessionId, requester_id: requesterId }),
+      }));
       await getMedia();
       await connectSignal();
       if(state.pc) return;
