@@ -110,6 +110,10 @@ def create_app() -> FastAPI:
     def healthz():
         return {"status": "ok"}
 
+    @app.get("/debug-db")
+    def debug_db():
+        return {"db_url": str(engine.url)}
+
     @app.get("/readyz")
     def readyz():
         checks: dict[str, str | bool] = {
