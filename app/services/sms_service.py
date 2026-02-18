@@ -38,7 +38,14 @@ class SMSService:
         # Demo mode: disable Twilio calls entirely.
         if os.getenv("TWILIO_DISABLED", "").strip().lower() in {"1", "true", "yes", "on"}:
             to = self._normalize_phone(self.test_override_phone or phone)
-            return {"channel": "phone", "sent": True, "mock": True, "status": "pending", "target_phone": to}
+            return {
+                "channel": "phone",
+                "sent": False,
+                "mock": True,
+                "status": "disabled",
+                "detail": "SMS OTP is disabled",
+                "target_phone": to,
+            }
         target = self.test_override_phone or phone
         to = self._normalize_phone(target)
         if not self.is_configured():

@@ -255,6 +255,16 @@ def _otp_debug_enabled() -> bool:
     return v in {"1", "true", "yes", "on"}
 
 
+def _phone_otp_enabled() -> bool:
+    # Optional explicit override.
+    override = os.getenv("OTP_PHONE_ENABLED", "").strip().lower()
+    if override:
+        return override in {"1", "true", "yes", "on"}
+    # Safe default: disable when Twilio is disabled.
+    twilio_disabled = os.getenv("TWILIO_DISABLED", "").strip().lower() in {"1", "true", "yes", "on"}
+    return not twilio_disabled
+
+
 def _validate_identifier_channel(identifier: str, channel: str) -> str:
     value = (identifier or "").strip()
     if not value:
@@ -664,6 +674,8 @@ def patient_forgot_password(payload: ForgotPasswordRequest, db: Session = Depend
             raise ValueError("Invalid role")
         if channel not in {"email", "phone"}:
             raise ValueError("Invalid channel")
+        if channel == "phone" and not _phone_otp_enabled():
+            raise ValueError("SMS OTP is disabled. Use Email OTP.")
         identifier = _validate_identifier_channel(payload.identifier, channel)
         data = relational_service.send_forgot_password_otp(db, role, identifier)
         delivery: dict = {"channel": payload.channel, "sent": False}
@@ -688,6 +700,8 @@ def patient_forgot_password(payload: ForgotPasswordRequest, db: Session = Depend
 def verify_forgot_otp(payload: VerifyForgotOTPRequest):
     try:
         channel = payload.channel.strip().lower()
+        if channel == "phone" and not _phone_otp_enabled():
+            raise ValueError("SMS OTP is disabled. Use Email OTP.")
         identifier = _validate_identifier_channel(payload.identifier, channel)
         if channel == "phone":
             if sms_service.verify_otp_phone(identifier, payload.otp):
@@ -724,6 +738,8 @@ def patient_forgot_password_compat(payload: ForgotPasswordRequest, db: Session =
 def patient_reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
     try:
         identifier = _validate_identifier_channel(payload.identifier, payload.channel)
+        if payload.channel.strip().lower() == "phone" and not _phone_otp_enabled():
+            raise ValueError("SMS OTP is disabled. Use Email OTP.")
         if payload.reset_token:
             ok = otp_service.consume_ticket(
                 f"{payload.role.strip().lower()}_forgot_verified",
