@@ -611,6 +611,8 @@ def send_registration_otp(payload: RegistrationOTPRequest, db: Session = Depends
         data = relational_service.send_patient_registration_otp(db, payload.identifier)
         delivery: dict = {"channel": payload.channel, "sent": False}
         channel = payload.channel.strip().lower()
+        if channel == "phone" and not _phone_otp_enabled():
+            raise ValueError("SMS OTP is disabled. Use Email OTP.")
         if channel == "email":
             delivery = email_service.send_otp_email(
                 payload.identifier,
@@ -641,6 +643,8 @@ def send_registration_otp_get(
 @router.post("/verify-registration-otp")
 def verify_registration_otp(payload: VerifyRegistrationOTPRequest):
     try:
+        if payload.channel.strip().lower() == "phone" and not _phone_otp_enabled():
+            raise ValueError("SMS OTP is disabled. Use Email OTP.")
         if payload.channel.strip().lower() == "phone":
             # Prefer provider verification.
             if sms_service.verify_otp_phone(payload.identifier, payload.otp):
