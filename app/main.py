@@ -14,6 +14,7 @@ import shutil
 
 from app.routers import api, auth, doctor, patient, student
 from app.db import Base, db_session, engine
+from app import models  # importing lib
 from app.models.db_models import ConsultationSession
 from app.services.relational_service import relational_service
 from app.services.realtime_service import chat_manager, notification_manager, signaling_manager
