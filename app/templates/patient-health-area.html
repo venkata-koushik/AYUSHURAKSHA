@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Health in My Area</title>
+  <style>
+    :root { --blue:#2D7BE5; --blue-dark:#1E5DA8; --bg:#eef4ff; --card:#fff; --line:#d7e5f7; --text:#16324f; --muted:#4a6789; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Poppins", "Inter", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 500px at 100% -20%, #d9e8ff, transparent),
+        radial-gradient(900px 420px at -10% 110%, #e6f0ff, transparent),
+        var(--bg);
+    }
+    .page { max-width: 1120px; margin: 0 auto; padding: 18px; }
+    .top {
+      background: linear-gradient(120deg, var(--blue-dark), var(--blue));
+      color: #fff;
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 14px 26px rgba(45,123,229,.3);
+    }
+    .back {
+      border: 1px solid rgba(255,255,255,.3);
+      background: rgba(255,255,255,.12);
+      color: #fff;
+      border-radius: 10px;
+      padding: 9px 12px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .grid {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap: 12px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 10px 22px rgba(18,62,108,.1);
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .card:hover { transform: translateY(-1px); box-shadow: 0 14px 26px rgba(18,62,108,.13); }
+    h3 { margin: 0 0 8px; }
+    .meta { color: var(--muted); font-size: .92rem; }
+    .chips { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip {
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: #edf4ff;
+      border: 1px solid #d5e3f8;
+      color: #1f4f85;
+      font-size: .78rem;
+      font-weight: 700;
+    }
+    .bars { margin-top: 12px; display: grid; gap: 10px; }
+    .bar-label { display: flex; justify-content: space-between; font-size: .88rem; margin-bottom: 4px; color: #264567; }
+    .bar-wrap { height: 10px; border-radius: 999px; background: #edf2fa; border: 1px solid #d9e5f6; overflow: hidden; }
+    .bar { height: 100%; background: linear-gradient(120deg,#1E5DA8,#2D7BE5); width: 0%; transition: width .6s ease; }
+    .list { margin-top: 10px; display: grid; gap: 8px; }
+    .row {
+      border: 1px solid #e0e9f8;
+      background: #f9fbff;
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-size: .9rem;
+    }
+    .row b { color: #154677; }
+    .hint {
+      margin-top: 12px;
+      border: 1px dashed #c3d6f3;
+      border-radius: 10px;
+      background: #f7fbff;
+      padding: 10px;
+      color: #395978;
+      font-size: .86rem;
+    }
+    .status {
+      margin-top: 12px;
+      background: #fff;
+      border: 1px dashed #c8d9ef;
+      border-radius: 10px;
+      padding: 10px;
+      min-height: 44px;
+      white-space: pre-wrap;
+      font-size: .84rem;
+      color: #3d5878;
+    }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="top">
+      <button class="back" type="button" onclick="location.href='/patient/dashboard'">&#8592; Back</button>
+      <strong>Health in My Area</strong>
+      <span id="daysMeta">Last 30 days</span>
+    </header>
+
+    <section class="grid">
+      <article class="card">
+        <h3>Local Health Snapshot</h3>
+        <p class="meta" id="locMeta">District: - | State: -</p>
+        <div class="chips">
+          <span class="chip" id="districtTotal">District Cases: 0</span>
+          <span class="chip" id="stateTotal">State Cases: 0</span>
+          <span class="chip" id="indiaTotal">India Cases: 0</span>
+        </div>
+        <div class="bars" id="districtBars"></div>
+      </article>
+
+      <article class="card">
+        <h3>Top Categories Comparison</h3>
+        <div class="list" id="compareRows"></div>
+        <div class="hint">Data is based on diagnosis records grouped by disease category across your district, state, and India.</div>
+      </article>
+    </section>
+
+    <pre id="status" class="status"></pre>
+  </main>
+
+  <script>
+    const status = document.getElementById('status');
+    const CATEGORY = {
+      1: 'Respiratory', 2: 'Gastrointestinal', 3: 'Musculoskeletal', 4: 'Neurological',
+      5: 'Dermatological', 6: 'Cardiovascular', 7: 'Endocrine', 8: 'Genitourinary',
+      9: 'ENT', 10: 'Ophthalmic', 11: 'Mental Health', 12: 'General / Other'
+    };
+    function show(v){ status.textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2); }
+    async function parse(res){
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { detail: txt || ('HTTP ' + res.status) }; }
+      if(!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : (txt || ('HTTP ' + res.status)));
+      return data;
+    }
+    function normalizeRows(rows){ return Array.isArray(rows) ? rows.map((r) => ({ category: Number(r.disease_category || 0), count: Number(r.count || 0) })) : []; }
+    function sum(rows){ return rows.reduce((a, b) => a + Number(b.count || 0), 0); }
+    function mapByCategory(rows){
+      const out = {};
+      rows.forEach((r) => { out[r.category] = Number(r.count || 0); });
+      return out;
+    }
+    function renderBars(rows){
+      const wrap = document.getElementById('districtBars');
+      wrap.innerHTML = '';
+      if (!rows.length) {
+        wrap.innerHTML = '<div class="row"><span>No district diagnosis trends available yet.</span></div>';
+        return;
+      }
+      const max = Math.max(...rows.map((r) => r.count), 1);
+      rows.slice(0, 6).forEach((r) => {
+        const pct = Math.max(3, Math.round((r.count / max) * 100));
+        const block = document.createElement('div');
+        block.innerHTML = `
+          <div class="bar-label"><span>${CATEGORY[r.category] || ('Category ' + r.category)}</span><b>${r.count}</b></div>
+          <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>`;
+        wrap.appendChild(block);
+      });
+    }
+    function renderComparison(districtRows, stateRows, indiaRows){
+      const rows = document.getElementById('compareRows');
+      rows.innerHTML = '';
+      const dMap = mapByCategory(districtRows);
+      const sMap = mapByCategory(stateRows);
+      const iMap = mapByCategory(indiaRows);
+      const keys = Object.keys({ ...dMap, ...sMap, ...iMap }).map(Number).sort((a,b) => (dMap[b] || 0) - (dMap[a] || 0));
+      if (!keys.length) {
+        rows.innerHTML = '<div class="row"><span>No comparison data available.</span></div>';
+        return;
+      }
+      keys.slice(0, 8).forEach((k) => {
+        const line = document.createElement('div');
+        line.className = 'row';
+        line.innerHTML = `<span>${CATEGORY[k] || ('Category ' + k)}</span><span><b>D:</b> ${dMap[k] || 0} | <b>S:</b> ${sMap[k] || 0} | <b>I:</b> ${iMap[k] || 0}</span>`;
+        rows.appendChild(line);
+      });
+    }
+
+    (async function init(){
+      try {
+        const patientId = localStorage.getItem('patient_id') || '';
+        if (!patientId) { show('No patient session. Redirecting to login.'); setTimeout(() => location.href = '/patient/login', 700); return; }
+        const days = 30;
+        const data = await parse(await fetch('/api/patient/health-in-my-area?patient_id=' + encodeURIComponent(patientId) + '&days=' + days));
+        const districtRows = normalizeRows(data?.comparison?.district || data?.most_common_diseases_local || []);
+        const stateRows = normalizeRows(data?.comparison?.state || []);
+        const indiaRows = normalizeRows(data?.comparison?.india || []);
+        districtRows.sort((a,b)=>b.count-a.count);
+        stateRows.sort((a,b)=>b.count-a.count);
+        indiaRows.sort((a,b)=>b.count-a.count);
+
+        document.getElementById('locMeta').textContent = `District: ${data.district || '-'} | State: ${data.state || '-'}`;
+        document.getElementById('daysMeta').textContent = `Last ${data.time_range_days || days} days`;
+        document.getElementById('districtTotal').textContent = 'District Cases: ' + sum(districtRows);
+        document.getElementById('stateTotal').textContent = 'State Cases: ' + sum(stateRows);
+        document.getElementById('indiaTotal').textContent = 'India Cases: ' + sum(indiaRows);
+
+        renderBars(districtRows);
+        renderComparison(districtRows, stateRows, indiaRows);
+        show({ district: data.district, state: data.state, total_district: sum(districtRows), total_state: sum(stateRows), total_india: sum(indiaRows) });
+      } catch (e) {
+        show(e.message || String(e));
+      }
+    })();
+  </script>
+</body>
+</html>

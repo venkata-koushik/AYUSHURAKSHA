@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile & Settings</title>
+  <style>
+    body { margin: 0; font-family: "Poppins", "Inter", sans-serif; background: #f4f7fb; color: #183452; }
+    .page { max-width: 840px; margin: 0 auto; padding: 18px; }
+    .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .back { border: 0; border-radius: 10px; padding: 10px 12px; background: #fff; cursor: pointer; }
+    .card { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 8px 20px rgba(17,56,97,0.09); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    input, select { border: 1px solid #d5e3f5; border-radius: 10px; padding: 11px; font-family: inherit; }
+    button { border: 0; border-radius: 10px; padding: 11px 13px; background: #2d7be5; color: #fff; font-weight: 700; cursor: pointer; margin-top: 10px; }
+    .note { font-size: 0.83rem; color: #4b6785; }
+    pre { background: #f8fbff; border: 1px dashed #c5d9f2; border-radius: 10px; padding: 10px; min-height: 42px; white-space: pre-wrap; }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="top">
+      <button class="back" type="button" onclick="location.href='/patient/dashboard'">&#8592; Back</button>
+      <strong>Profile & Settings</strong>
+    </div>
+
+    <section class="card">
+      <p class="note">Aadhaar and identity fields are locked for security. You can update profile preferences and local settings.</p>
+      <div class="grid">
+        <div class="field"><label>Full Name</label><input id="name" /></div>
+        <div class="field"><label>Email</label><input id="email" /></div>
+        <div class="field"><label>Phone</label><input id="phone" /></div>
+        <div class="field"><label>Language</label>
+          <select id="language">
+            <option>English</option><option>Hindi</option><option>Tamil</option><option>Telugu</option><option>Kannada</option>
+          </select>
+        </div>
+        <div class="field"><label>Allergies</label><input id="allergies" /></div>
+        <div class="field"><label>Chronic Conditions</label><input id="chronic" /></div>
+      </div>
+      <button id="saveBtn" type="button">Save Settings</button>
+      <pre id="status"></pre>
+    </section>
+  </main>
+
+  <script>
+    const status = document.getElementById('status');
+    const patientId = localStorage.getItem('patient_id');
+
+    async function parse(res) {
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { detail: txt || ('HTTP ' + res.status) }; }
+      if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : (txt || ('HTTP ' + res.status)));
+      return data;
+    }
+
+    async function init() {
+      if (!patientId) {
+        status.textContent = 'No patient session. Please login again.';
+        return;
+      }
+      try {
+        const profile = await parse(await fetch('/api/patient/profile?patient_id=' + encodeURIComponent(patientId)));
+        document.getElementById('name').value = localStorage.getItem('patient_name') || profile.name || '';
+        document.getElementById('email').value = profile.email || '';
+        document.getElementById('phone').value = profile.phone || '';
+        document.getElementById('language').value = profile.language || 'English';
+        document.getElementById('allergies').value = localStorage.getItem('patient_allergies') || '';
+        document.getElementById('chronic').value = localStorage.getItem('patient_chronic') || '';
+      } catch (e) {
+        status.textContent = e.message || String(e);
+      }
+    }
+
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+      try {
+        if (!patientId) throw new Error('No patient session.');
+        const payload = {
+          patient_id: patientId,
+          name: document.getElementById('name').value.trim(),
+          email: document.getElementById('email').value.trim(),
+          phone: document.getElementById('phone').value.trim(),
+          language: document.getElementById('language').value,
+        };
+        const updated = await parse(await fetch('/api/patient/profile/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }));
+        localStorage.setItem('patient_name', payload.name);
+        localStorage.setItem('patient_allergies', document.getElementById('allergies').value.trim());
+        localStorage.setItem('patient_chronic', document.getElementById('chronic').value.trim());
+        status.textContent = JSON.stringify({ updated: true, profile: updated }, null, 2);
+      } catch (e) {
+        status.textContent = e.message || String(e);
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>
+
+

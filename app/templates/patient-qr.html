@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User QR</title>
+  <link rel="stylesheet" href="/static/pages/css/patient-qr.css" />
+</head>
+<body>
+  <div class="card">
+    <h2>My Health QR</h2>
+    <img id="qrImage" alt="User QR" />
+    <div class="row">
+      <button id="backBtn">Back</button>
+      <button id="refreshBtn">Refresh QR</button>
+    </div>
+  </div>
+  <script>
+    function loadQr() {
+      const patientId = localStorage.getItem("patient_id");
+      if (!patientId) return;
+      qrImage.src = `/api/patient/qr?patient_id=${encodeURIComponent(patientId)}&t=${Date.now()}`;
+      console.log("patient qr view working");
+    }
+    backBtn.onclick = () => location.href = "/patient/dashboard";
+    refreshBtn.onclick = loadQr;
+    loadQr();
+  </script>
+</body>
+</html>
+
+

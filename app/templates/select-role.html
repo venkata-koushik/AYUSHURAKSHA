@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Select Your Role</title>
+  <style>
+    :root {
+      --blue-700: #1E5DA8;
+      --blue-500: #2D7BE5;
+      --bg: #F4F7FB;
+      --card: #F2F5F9;
+      --text: #123156;
+      --shadow: 0 14px 28px rgba(30, 93, 168, 0.16);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Poppins", "Inter", "Segoe UI", sans-serif;
+      background: radial-gradient(1200px 500px at 80% -10%, #dcecff, transparent), var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+    .app {
+      width: min(100%, 960px);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: transparent;
+    }
+    .header {
+      background: linear-gradient(120deg, var(--blue-700), var(--blue-500));
+      color: #fff;
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: 32px 1fr 32px;
+      align-items: center;
+      box-shadow: 0 10px 24px rgba(30, 93, 168, 0.26);
+    }
+    .header h1 {
+      margin: 0;
+      text-align: center;
+      font-size: 1.15rem;
+      letter-spacing: 0.2px;
+    }
+    .back {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border: 0;
+      border-radius: 8px;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.16);
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 22px;
+      gap: 24px;
+    }
+    .roles {
+      width: 100%;
+      display: flex;
+      gap: 14px;
+    }
+    .role-card {
+      flex: 1;
+      border: 0;
+      border-radius: 16px;
+      padding: 18px 14px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      min-height: 190px;
+    }
+    .role-card:hover { transform: translateY(-2px); }
+    .role-card.selected {
+      background: #2D7BE5;
+      color: #fff;
+      transform: scale(1.05);
+    }
+    .avatar {
+      width: 86px;
+      height: 86px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 2rem;
+      background: rgba(255, 255, 255, 0.8);
+    }
+    .role-card.selected .avatar {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+    }
+    .role-label {
+      font-weight: 700;
+      font-size: 1.02rem;
+      letter-spacing: 0.2px;
+    }
+    .continue {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      background: linear-gradient(120deg, #1E5DA8, #2D7BE5);
+      color: #fff;
+      font-weight: 700;
+      padding: 14px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-bottom: 10px;
+      opacity: 0.55;
+      pointer-events: none;
+    }
+    .continue.enabled {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    @media (max-width: 720px) {
+      .roles { flex-direction: column; }
+      .role-card { min-height: 140px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <button class="back" type="button" onclick="history.back()">&#8592;</button>
+      <h1>Select Your Role</h1>
+      <div></div>
+    </header>
+
+    <section class="body">
+      <div class="roles" id="roles">
+        <button class="role-card" data-role="doctor" data-route="/doctor/login">
+          <div class="avatar">&#128104;&#8205;&#9877;&#65039;</div>
+          <div class="role-label">Doctor</div>
+        </button>
+        <button class="role-card" data-role="patient" data-route="/patient/register">
+          <div class="avatar">&#129658;</div>
+          <div class="role-label">Patient</div>
+        </button>
+        <button class="role-card" data-role="student" data-route="/student/register">
+          <div class="avatar">&#127891;</div>
+          <div class="role-label">Student</div>
+        </button>
+      </div>
+
+      <button id="continueBtn" class="continue" type="button">Continue</button>
+      <button class="continue enabled" type="button" style="margin-top:-14px;background:linear-gradient(120deg,#0f3f7c,#2D7BE5);" onclick="location.href='/government/login'">Government Official Login</button>
+    </section>
+  </main>
+
+  <script>
+    const roleCards = Array.from(document.querySelectorAll('.role-card'));
+    const continueBtn = document.getElementById('continueBtn');
+    let selected = null;
+
+    roleCards.forEach((card) => {
+      card.addEventListener('click', () => {
+        roleCards.forEach((x) => x.classList.remove('selected'));
+        card.classList.add('selected');
+        selected = {
+          role: card.dataset.role,
+          route: card.dataset.route,
+        };
+        continueBtn.classList.add('enabled');
+      });
+    });
+
+    continueBtn.addEventListener('click', () => {
+      if (!selected) return;
+      localStorage.setItem('selected_role', selected.role);
+      location.href = selected.route;
+    });
+  </script>
+</body>
+</html>
+
+

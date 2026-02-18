@@ -1,0 +1,136 @@
+:root {
+  --bg: #f2efe7;
+  --card: #fffdf7;
+  --ink: #1d2b2a;
+  --accent: #0b6b5f;
+  --accent-2: #cb5f2a;
+  --line: #d8d3c2;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+  background: radial-gradient(circle at 20% 10%, #e5f3ee 0, transparent 40%), radial-gradient(circle at 80% 20%, #ffe7db 0, transparent 35%), var(--bg);
+}
+
+.bg-shape {
+  position: fixed;
+  z-index: -1;
+  border-radius: 999px;
+  filter: blur(2px);
+}
+
+.bg-1 {
+  width: 220px;
+  height: 220px;
+  right: 10%;
+  top: 8%;
+  background: #d5efe5;
+}
+
+.bg-2 {
+  width: 280px;
+  height: 280px;
+  left: 3%;
+  bottom: 4%;
+  background: #ffe1cf;
+}
+
+.layout {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.topbar h1 {
+  margin: 0 0 6px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.4rem, 2.8vw, 2.1rem);
+}
+
+.topbar p {
+  margin: 0 0 18px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.hidden {
+  display: none;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+.wrap {
+  flex-wrap: wrap;
+}
+
+input, textarea, button {
+  width: 100%;
+  margin: 6px 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+button {
+  width: auto;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.93;
+}
+
+#rolePatient, #roleDoctor, #roleStudent {
+  background: var(--accent-2);
+}
+
+.output {
+  margin-top: 8px;
+  min-height: 56px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  white-space: pre-wrap;
+  background: #fff;
+}
+
+.meta {
+  font-size: 13px;
+}
+
+@media (max-width: 760px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+  .btn-row {
+    flex-direction: column;
+  }
+  button {
+    width: 100%;
+  }
+}

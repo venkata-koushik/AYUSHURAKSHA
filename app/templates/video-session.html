@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Video Consultation</title>
+  <style>
+    :root { --bg:#0c182b; --card:#10233c; --line:#28486f; --ok:#16a34a; --warn:#f59e0b; --danger:#dc2626; }
+    body { margin:20px; font-family:Inter,Segoe UI,sans-serif; background: radial-gradient(1200px 500px at 50% -20%, #1a3359, transparent), var(--bg); color:#e5eefc; }
+    .page { max-width:1200px; margin:0 auto; }
+    .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .back { color:#d5e4ff; text-decoration:none; border:1px solid #355985; border-radius:12px; padding:8px 12px; background:#10233c; }
+    .status { display:flex; gap:8px; align-items:center; border-radius:999px; padding:6px 10px; border:1px solid #355985; background:#10233c; font-size:12px; }
+    .dot { width:10px; height:10px; border-radius:50%; background:#94a3b8; }
+    .status.connected .dot { background:#22c55e; }
+    .status.connecting .dot { background:#f59e0b; }
+    .status.failed .dot { background:#ef4444; }
+
+    .video-card { position:relative; border:1px solid var(--line); border-radius:16px; overflow:hidden; box-shadow:0 16px 30px rgba(0,0,0,.35); }
+    .remote { width:100%; height:min(68vh,640px); background:#06101c; object-fit:cover; display:block; }
+    .local-wrap { position:absolute; right:14px; bottom:14px; width:280px; max-width:42vw; border-radius:14px; border:1px solid #436897; overflow:hidden; box-shadow:0 12px 24px rgba(0,0,0,.35); }
+    .local { width:100%; height:168px; background:#0a1524; object-fit:cover; display:block; }
+    .local-label { position:absolute; left:8px; top:8px; background:#111827cc; color:#fff; border-radius:999px; padding:4px 8px; font-size:11px; }
+
+    .controls { margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+    button { border:1px solid #355985; background:#122846; color:#e5eefc; border-radius:12px; padding:10px 14px; cursor:pointer; font-weight:700; transition:all .2s ease; }
+    button:hover { transform:translateY(-1px); }
+    button:disabled { opacity:.55; cursor:not-allowed; }
+    .danger { background:#4a1b1b; border-color:#7a2b2b; }
+
+    .panel { margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .card { border:1px solid var(--line); border-radius:14px; padding:10px; background:#10233c; }
+    .card h4 { margin:0 0 8px; font-size:14px; }
+    .meter { width:100%; height:40px; background:#081423; border-radius:10px; border:1px solid #28486f; }
+    .state-log { white-space:pre-wrap; min-height:74px; font-size:12px; color:#c6d9f8; }
+
+    .toast { position:fixed; right:14px; bottom:14px; background:#111827; color:#fff; padding:10px 12px; border-radius:10px; display:none; max-width:320px; }
+
+    @media (max-width: 768px) {
+      body { margin:12px; }
+      .local-wrap { width:170px; }
+      .local { height:108px; }
+      .panel { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="top">
+      <a id="backLink" class="back" href="/select-role">Back</a>
+      <div id="conn" class="status connecting"><span class="dot"></span><span id="connText">Connecting</span></div>
+    </div>
+
+    <section class="video-card">
+      <video id="remoteVideo" class="remote" autoplay playsinline></video>
+      <div class="local-wrap">
+        <span class="local-label">You</span>
+        <video id="localVideo" class="local" autoplay muted playsinline></video>
+      </div>
+    </section>
+
+    <div class="controls">
+      <button id="micBtn" type="button">Mute Mic</button>
+      <button id="camBtn" type="button">Camera Off</button>
+      <button id="retryBtn" type="button">Retry Connection</button>
+      <button id="endBtn" class="danger" type="button">End Call</button>
+    </div>
+
+    <section class="panel">
+      <article class="card">
+        <h4>Microphone Level</h4>
+        <canvas id="meter" class="meter" width="600" height="40"></canvas>
+      </article>
+      <article class="card">
+        <h4>Session Log</h4>
+        <pre id="log" class="state-log"></pre>
+      </article>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const sessionId = localStorage.getItem('session_id') || '';
+    const role = (new URLSearchParams(location.search).get('role') || localStorage.getItem('active_role') || 'patient').toLowerCase();
+    localStorage.setItem('active_role', role);
+    const requesterId = role === 'student' ? (localStorage.getItem('student_id') || '') : (localStorage.getItem('patient_id') || '');
+    const authToken = role === 'student' ? (localStorage.getItem('student_token') || '') : (localStorage.getItem('patient_token') || '');
+
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+    const conn = document.getElementById('conn');
+    const connText = document.getElementById('connText');
+    const logEl = document.getElementById('log');
+
+    const state = {
+      ws: null,
+      notifyWs: null,
+      pc: null,
+      stream: null,
+      micOn: true,
+      camOn: true,
+      destroyed: false,
+      endedHandled: false,
+      triedIceRestart: false,
+      analyser: null,
+      audioCtx: null,
+      meterRAF: null,
+    };
+
+    function show(v){ logEl.textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2); }
+    function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',2200); }
+    function setConn(name, text){ conn.className='status ' + name; connText.textContent=text; }
+    function hideToast(){ const t = document.getElementById('toast'); t.style.display = 'none'; }
+
+    async function parse(res){
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { detail: txt || ('HTTP ' + res.status) }; }
+      if(!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : (txt || ('HTTP ' + res.status)));
+      return data;
+    }
+
+    async function getMedia(){
+      if(state.stream) return state.stream;
+      try {
+        state.stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      } catch (e) {
+        if (e && e.name === 'NotAllowedError') throw new Error('Camera/Microphone permission blocked. Please allow permissions and retry.');
+        throw e;
+      }
+      localVideo.srcObject = state.stream;
+      setupMicMeter(state.stream);
+      return state.stream;
+    }
+
+    function setupMicMeter(stream){
+      try {
+        const audioTrack = stream.getAudioTracks()[0];
+        if(!audioTrack) return;
+        state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = state.audioCtx.createMediaStreamSource(new MediaStream([audioTrack]));
+        state.analyser = state.audioCtx.createAnalyser();
+        state.analyser.fftSize = 256;
+        source.connect(state.analyser);
+        const canvas = document.getElementById('meter');
+        const ctx = canvas.getContext('2d');
+        const data = new Uint8Array(state.analyser.frequencyBinCount);
+        const draw = () => {
+          if(state.destroyed) return;
+          state.analyser.getByteFrequencyData(data);
+          const avg = data.reduce((a,b)=>a+b,0)/Math.max(1,data.length);
+          ctx.clearRect(0,0,canvas.width,canvas.height);
+          ctx.fillStyle = '#0b1a2e'; ctx.fillRect(0,0,canvas.width,canvas.height);
+          ctx.fillStyle = '#22c55e'; ctx.fillRect(0,0,Math.min(canvas.width, avg*2.4),canvas.height);
+          ctx.fillStyle = '#c7dbf8'; ctx.font = '12px Inter'; ctx.fillText('Mic level: ' + avg.toFixed(0), 8, 24);
+          state.meterRAF = requestAnimationFrame(draw);
+        };
+        draw();
+      } catch {}
+    }
+
+    function signalUrl(){
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      return `${proto}://${location.host}/ws/session/${encodeURIComponent(sessionId)}?role=${encodeURIComponent(role)}&token=${encodeURIComponent(authToken || '')}`;
+    }
+
+    async function getIceServers(){
+      try { const data = await parse(await fetch('/api/webrtc/config')); return data.iceServers || [{urls:'stun:stun.l.google.com:19302'}]; }
+      catch { return [{urls:'stun:stun.l.google.com:19302'}]; }
+    }
+
+    async function connectSignal(){
+      if(state.ws && (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)) return;
+      state.ws = new WebSocket(signalUrl());
+      state.ws.onopen = () => { setConn('connecting', 'Signaling connected'); if(role==='student') createOffer(false).catch(()=>null); };
+      state.ws.onclose = () => { if(state.destroyed) return; setConn('connecting', 'Reconnecting signaling...'); setTimeout(()=>connectSignal().catch(()=>null), 1200); };
+      state.ws.onmessage = async (evt) => {
+        let p; try { p = JSON.parse(evt.data); } catch { return; }
+        if(!state.pc) return;
+        if(p.type === 'offer'){
+          await state.pc.setRemoteDescription(new RTCSessionDescription(p.offer));
+          const answer = await state.pc.createAnswer();
+          await state.pc.setLocalDescription(answer);
+          state.ws.send(JSON.stringify({ type:'answer', answer }));
+        } else if(p.type === 'answer'){
+          await state.pc.setRemoteDescription(new RTCSessionDescription(p.answer));
+        } else if(p.type === 'candidate' && p.candidate){
+          await state.pc.addIceCandidate(p.candidate);
+        }
+      };
+    }
+
+    async function createOffer(iceRestart){
+      if(!state.pc || !state.ws || state.ws.readyState !== WebSocket.OPEN) return;
+      const offer = await state.pc.createOffer({ iceRestart: !!iceRestart });
+      await state.pc.setLocalDescription(offer);
+      state.ws.send(JSON.stringify({ type:'offer', offer }));
+    }
+
+    async function setupPeer(){
+      if(!sessionId) throw new Error('No active session id.');
+      await getMedia();
+      await connectSignal();
+      if(state.pc) return;
+      const iceServers = await getIceServers();
+      state.pc = new RTCPeerConnection({ iceServers });
+      state.stream.getTracks().forEach((t) => state.pc.addTrack(t, state.stream));
+
+      state.pc.ontrack = (e) => {
+        if(e.streams && e.streams[0]) {
+          remoteVideo.srcObject = e.streams[0];
+          setConn('connected', 'Connected');
+        }
+      };
+      state.pc.onicecandidate = (e) => {
+        if(e.candidate && state.ws && state.ws.readyState === WebSocket.OPEN) state.ws.send(JSON.stringify({ type:'candidate', candidate:e.candidate }));
+      };
+      state.pc.oniceconnectionstatechange = async () => {
+        const s = state.pc.iceConnectionState;
+        if(s === 'connected' || s === 'completed') setConn('connected', 'Connected');
+        else if(s === 'checking' || s === 'new') setConn('connecting', 'Connecting...');
+        else if(s === 'disconnected') setConn('connecting', 'Disconnected, retrying...');
+        else if(s === 'failed') {
+          if(!state.triedIceRestart){
+            state.triedIceRestart = true;
+            setConn('connecting', 'ICE restart...');
+            try { state.pc.restartIce(); await createOffer(true); }
+            catch { setConn('failed', 'Connection failed'); }
+          } else {
+            setConn('failed', 'Connection failed');
+          }
+        }
+      };
+
+      if(role === 'student') await createOffer(false);
+      else setConn('connecting', 'Waiting for student to join...');
+    }
+
+    function showRatingPrompt(){
+      if (role !== 'patient') return Promise.resolve();
+      return new Promise((resolve) => {
+        const wrap = document.createElement('div');
+        wrap.style.position = 'fixed';
+        wrap.style.inset = '0';
+        wrap.style.background = 'rgba(5, 15, 30, 0.6)';
+        wrap.style.display = 'grid';
+        wrap.style.placeItems = 'center';
+        wrap.style.zIndex = '50';
+        wrap.innerHTML = `
+          <div style="width:min(420px,92vw);background:#10233c;border:1px solid #355985;border-radius:14px;padding:14px;">
+            <h3 style="margin:0 0 8px;font-size:16px;">Rate This Consultation</h3>
+            <div style="font-size:13px;color:#c6d9f8;margin-bottom:8px;">Please submit your feedback before returning to dashboard.</div>
+            <input id="videoRatingValue" type="number" min="1" max="5" value="5" style="width:100%;padding:10px;border-radius:10px;border:1px solid #3f628f;background:#0d1d33;color:#e5eefc;" />
+            <textarea id="videoRatingFeedback" rows="3" placeholder="Optional feedback" style="margin-top:8px;width:100%;padding:10px;border-radius:10px;border:1px solid #3f628f;background:#0d1d33;color:#e5eefc;"></textarea>
+            <div id="videoRatingStatus" style="margin-top:8px;font-size:12px;color:#c6d9f8;"></div>
+            <div style="margin-top:10px;display:flex;gap:8px;">
+              <button id="videoRatingSkipBtn" type="button" style="flex:1;">Skip</button>
+              <button id="videoRatingSubmitBtn" type="button" style="flex:1;">Submit Rating</button>
+            </div>
+            <button id="videoRatingBackBtn" type="button" style="display:none;margin-top:10px;width:100%;">Back to Dashboard</button>
+          </div>`;
+        document.body.appendChild(wrap);
+        const submitBtn = wrap.querySelector('#videoRatingSubmitBtn');
+        const skipBtn = wrap.querySelector('#videoRatingSkipBtn');
+        const ratingInput = wrap.querySelector('#videoRatingValue');
+        const feedbackInput = wrap.querySelector('#videoRatingFeedback');
+        const statusEl = wrap.querySelector('#videoRatingStatus');
+        const backBtn = wrap.querySelector('#videoRatingBackBtn');
+        const closeAndResolve = () => {
+          try { wrap.remove(); } catch {}
+          resolve();
+        };
+        submitBtn.addEventListener('click', async () => {
+          try {
+            const rating = Number(ratingInput.value || 0);
+            if (!Number.isFinite(rating) || !Number.isInteger(rating) || rating < 1 || rating > 5) throw new Error('Rating must be an integer between 1 and 5.');
+            await parse(await fetch('/api/session/rating', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', ...(authToken ? { Authorization: 'Bearer ' + authToken } : {}) },
+              body: JSON.stringify({ session_id: sessionId, rating, feedback: (feedbackInput.value || '').trim() }),
+            }));
+            statusEl.textContent = 'Rating submitted successfully.';
+            submitBtn.style.display = 'none';
+            skipBtn.style.display = 'none';
+            backBtn.style.display = 'block';
+            toast('Rating submitted.');
+          } catch (e) {
+            show(e.message || String(e));
+            statusEl.textContent = e.message || String(e);
+          }
+        });
+        skipBtn.addEventListener('click', closeAndResolve);
+        backBtn.addEventListener('click', closeAndResolve);
+      });
+    }
+
+    async function handleSessionEnded(message){
+      if(state.endedHandled) return;
+      state.endedHandled = true;
+      hideToast();
+      show(message || 'Session ended.');
+      cleanup();
+      localStorage.removeItem('session_id');
+      if (role === 'patient') {
+        await showRatingPrompt();
+        location.replace('/patient/dashboard');
+      } else {
+        toast('Session ended.');
+        setTimeout(() => { location.href = '/student/dashboard'; }, 500);
+      }
+    }
+
+    async function endCall(){
+      try {
+        if(sessionId){
+          await parse(await fetch('/api/session/end', {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json', ...(authToken ? { Authorization:'Bearer ' + authToken } : {}) },
+            body: JSON.stringify({ session_id: sessionId })
+          }));
+        }
+        await handleSessionEnded('Session ended by you.');
+      } catch (e) {
+        show(e.message || String(e));
+        toast('Could not end session. Please retry.');
+      }
+    }
+
+    function connectNotifications(){
+      if(!requesterId || !authToken) return;
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      state.notifyWs = new WebSocket(`${proto}://${location.host}/ws/notifications/${encodeURIComponent(role)}/${encodeURIComponent(requesterId)}?token=${encodeURIComponent(authToken)}`);
+      state.notifyWs.onmessage = (evt) => {
+        try {
+          const p = JSON.parse(evt.data);
+          if (p.message) toast(p.message);
+          const t = String(p.title || '').toLowerCase();
+          if (p.type === 'session_update' && t.includes('session ended') && p.session_id === sessionId) {
+            handleSessionEnded('Session ended by the other participant.').catch(()=>null);
+          }
+        } catch {}
+      };
+      state.notifyWs.onclose = () => {
+        if(state.destroyed || state.endedHandled) return;
+        setTimeout(connectNotifications, 1200);
+      };
+    }
+
+    function cleanup(){
+      state.destroyed = true;
+      if(state.meterRAF) cancelAnimationFrame(state.meterRAF);
+      try { if(state.ws) state.ws.close(); } catch {}
+      try { if(state.notifyWs) state.notifyWs.close(); } catch {}
+      try { if(state.pc) state.pc.close(); } catch {}
+      try { if(state.stream) state.stream.getTracks().forEach((t)=>t.stop()); } catch {}
+      try { if(state.audioCtx) state.audioCtx.close(); } catch {}
+      state.ws = null; state.notifyWs = null; state.pc = null; state.stream = null;
+    }
+
+    async function toggleMic(){
+      await getMedia();
+      const track = state.stream.getAudioTracks()[0];
+      if(!track) throw new Error('No microphone detected.');
+      state.micOn = !state.micOn;
+      track.enabled = state.micOn;
+      document.getElementById('micBtn').textContent = state.micOn ? 'Mute Mic' : 'Unmute Mic';
+    }
+
+    async function toggleCam(){
+      await getMedia();
+      const track = state.stream.getVideoTracks()[0];
+      if(!track) throw new Error('No camera detected.');
+      state.camOn = !state.camOn;
+      track.enabled = state.camOn;
+      document.getElementById('camBtn').textContent = state.camOn ? 'Camera Off' : 'Camera On';
+    }
+
+    async function retryConnection(){
+      try {
+        setConn('connecting', 'Retrying...');
+        if(state.pc) {
+          state.triedIceRestart = true;
+          state.pc.restartIce();
+          await createOffer(true);
+        } else {
+          await setupPeer();
+        }
+      } catch (e) {
+        setConn('failed', 'Retry failed');
+        show(e.message || String(e));
+      }
+    }
+
+    document.getElementById('backLink').href = role === 'student' ? '/student/dashboard' : '/patient/language-select';
+    document.getElementById('micBtn').addEventListener('click', () => toggleMic().catch((e)=>show(e.message || String(e))));
+    document.getElementById('camBtn').addEventListener('click', () => toggleCam().catch((e)=>show(e.message || String(e))));
+    document.getElementById('retryBtn').addEventListener('click', () => retryConnection().catch((e)=>show(e.message || String(e))));
+    document.getElementById('endBtn').addEventListener('click', () => endCall().catch((e)=>show(e.message || String(e))));
+    window.addEventListener('beforeunload', cleanup);
+
+    connectNotifications();
+    setupPeer().catch((e) => {
+      setConn('failed', 'Setup failed');
+      show(e.message || String(e));
+      toast('Camera/Microphone/WebRTC setup failed. Check permissions and retry.');
+    });
+  </script>
+</body>
+</html>

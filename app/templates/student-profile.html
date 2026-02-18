@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Profile</title>
+  <style>
+    :root{--bg:#eef4ff;--card:#fff;--line:#d6e3f7;--txt:#17324f;--mut:#5c7695;--pri:#2563eb}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,Segoe UI,sans-serif;background:var(--bg);color:var(--txt)}
+    .page{max-width:980px;margin:0 auto;padding:20px}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+    .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 12px;cursor:pointer;font-weight:600}
+    .btn.pri{background:var(--pri);color:#fff;border-color:#1f55cc}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 10px 22px rgba(20,55,104,.1)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    label{font-size:12px;color:var(--mut);font-weight:600}
+    input{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px}
+    .langs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:8px}
+    .status{margin-top:10px;white-space:pre-wrap;background:#f7fbff;border:1px dashed #c4d7f4;border-radius:10px;padding:10px;min-height:64px}
+    @media(max-width:900px){.grid,.langs{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="top">
+      <button class="btn" id="backBtn">&larr; Dashboard</button>
+      <h2>Student Profile</h2>
+      <button class="btn pri" id="saveBtn">Save</button>
+    </div>
+    <section class="card">
+      <div class="grid">
+        <div><label>Student ID (Locked)</label><input id="student_id" readonly /></div>
+        <div><label>College ID (Locked)</label><input id="college_id" readonly /></div>
+        <div><label>Full Name</label><input id="full_name" /></div>
+        <div><label>Institute Name</label><input id="institute_name" /></div>
+        <div><label>Official Email</label><input id="official_email" /></div>
+        <div><label>Phone</label><input id="phone" /></div>
+      </div>
+      <div style="margin-top:10px">
+        <label>Languages</label>
+        <div id="langs" class="langs"></div>
+      </div>
+      <pre id="out" class="status"></pre>
+    </section>
+  </main>
+  <script>
+    const LANGS=['English','Hindi','Tamil','Telugu','Kannada','Malayalam','Marathi','Bengali'];
+    const el=(id)=>document.getElementById(id);
+    const studentId=localStorage.getItem('student_id')||'';
+    const show=(v)=>{ out.textContent=typeof v==='string'?v:JSON.stringify(v,null,2); console.log('[student-profile]',v); };
+    const parse=async(r)=>{const t=await r.text();let d={};try{d=t?JSON.parse(t):{}}catch{d={detail:t||('HTTP '+r.status)}}if(!r.ok)throw new Error(typeof d.detail==='string'?d.detail:(t||('HTTP '+r.status)));return d;};
+    let selected=new Set();
+    function renderLangs(){
+      el('langs').innerHTML='';
+      LANGS.forEach((name)=>{
+        const row=document.createElement('label');
+        row.style.display='flex';row.style.gap='6px';row.style.alignItems='center';
+        row.innerHTML=`<input type="checkbox" ${selected.has(name)?'checked':''}/> ${name}`;
+        row.querySelector('input').onchange=(e)=>{ if(e.target.checked)selected.add(name); else selected.delete(name); console.log('[student-profile] language toggled',name,e.target.checked); };
+        el('langs').appendChild(row);
+      });
+    }
+    async function loadProfile(){
+      if(!studentId) throw new Error('Student login required.');
+      const d=await parse(await fetch('/api/student/profile?student_id='+encodeURIComponent(studentId)));
+      el('student_id').value=d.student_id||'';
+      el('college_id').value=d.college_id||'';
+      el('full_name').value=d.full_name||'';
+      el('institute_name').value=d.institute_name||'';
+      el('official_email').value=d.official_email||'';
+      el('phone').value=d.phone||'';
+      selected=new Set((d.languages||[]));
+      if(!selected.size)selected.add('English');
+      renderLangs();
+      show({loaded:true,student_id:d.student_id,rating_avg:d.rating_avg,rating_count:d.rating_count});
+    }
+    async function saveProfile(){
+      const payload={
+        student_id:studentId,
+        full_name:el('full_name').value.trim(),
+        institute_name:el('institute_name').value.trim(),
+        official_email:el('official_email').value.trim(),
+        phone:el('phone').value.trim(),
+        languages:Array.from(selected),
+      };
+      console.log('[student-profile] saving payload',payload);
+      const d=await parse(await fetch('/api/student/profile/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}));
+      localStorage.setItem('student_language',(d.languages||[]).join(','));
+      show({saved:true,data:d});
+    }
+    backBtn.onclick=()=>location.href='/student/dashboard';
+    saveBtn.onclick=()=>saveProfile().catch((e)=>show(e.message||String(e)));
+    loadProfile().catch((e)=>show(e.message||String(e)));
+  </script>
+</body>
+</html>

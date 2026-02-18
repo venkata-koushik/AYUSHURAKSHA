@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patient Login</title>
+  <style>
+    body { margin:0; font-family:"Poppins","Inter",sans-serif; background:#f4f7fb; color:#173451; }
+    .wrap { max-width: 520px; margin: 0 auto; padding: 18px; }
+    .card { background:#fff; border:1px solid #d7e5f5; border-radius:14px; padding:16px; box-shadow:0 10px 20px rgba(15,61,108,.1); }
+    .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .back { border:0; border-radius:10px; padding:10px 12px; cursor:pointer; }
+    h2 { margin: 0 0 8px; }
+    .field { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+    input { border:1px solid #d4e3f5; border-radius:10px; padding:11px; font-family:inherit; }
+    button { border:0; border-radius:10px; padding:11px 13px; font-weight:700; cursor:pointer; font-family:inherit; }
+    .login { width:100%; background:linear-gradient(120deg,#1E5DA8,#2D7BE5); color:#fff; }
+    .link { margin-top:10px; text-align:center; font-size:.9rem; }
+    .link a { color:#1E5DA8; text-decoration:none; font-weight:700; }
+    pre { margin-top:10px; border:1px dashed #c8d9ef; background:#f8fbff; border-radius:10px; padding:10px; min-height:44px; white-space:pre-wrap; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <button class="back" type="button" onclick="location.href='/select-role'">&#8592; Back</button>
+      <strong>Patient</strong>
+    </div>
+    <section class="card">
+      <h2>Patient Login</h2>
+      <div class="field"><label>Email / Phone</label><input id="identifier" /></div>
+      <div class="field"><label>Password</label><input id="password" type="password" /></div>
+      <button id="loginBtn" class="login" type="button">Login</button>
+      <div class="link"><a href="/forgot-password?role=patient">Forgot Password?</a></div>
+      <div class="link">New patient? <a href="/patient/register">Create Account</a></div>
+      <pre id="status"></pre>
+    </section>
+  </main>
+
+  <script>
+    const status = document.getElementById('status');
+    function show(v){ status.textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2); }
+    async function parse(res){
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { detail: txt || ('HTTP ' + res.status) }; }
+      if(!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : (txt || ('HTTP ' + res.status)));
+      return data;
+    }
+    (function applyResetPrefill(){
+      try {
+        const payload = JSON.parse(sessionStorage.getItem('reset_prefill_patient') || '{}');
+        if (!payload || payload.role !== 'patient') return;
+        if (payload.identifier) document.getElementById('identifier').value = payload.identifier;
+        if (payload.password) document.getElementById('password').value = payload.password;
+        show('Password reset successful. Please click Login.');
+        sessionStorage.removeItem('reset_prefill_patient');
+      } catch {}
+    })();
+
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      try {
+        const id = document.getElementById('identifier').value.trim();
+        const pw = document.getElementById('password').value;
+        if(!id || !pw) throw new Error('Enter identifier and password.');
+        const body = { full_name: null, phone: null, email: null, password: pw };
+        if (id.includes('@')) body.email = id;
+        else if (/^\d{10,}$/.test(id)) body.phone = id;
+        else body.full_name = id;
+
+        const data = await parse(await fetch('/api/patient/login', {
+          method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+        }));
+
+        localStorage.setItem('patient_id', data.patient_id || '');
+        localStorage.setItem('patient_uhid', data.uhid || '');
+        if (data.token) localStorage.setItem('patient_token', data.token);
+        show({ login: 'success', patient_id: data.patient_id, uhid: data.uhid });
+        console.log('patient login working', { patient_id: data.patient_id, uhid: data.uhid });
+        location.replace('/patient/dashboard');
+      } catch(e){ show(e.message || String(e)); }
+    });
+  </script>
+</body>
+</html>
+
+

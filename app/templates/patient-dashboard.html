@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patient Dashboard</title>
+  <style>
+    :root {
+      --blue-500: #2D7BE5;
+      --blue-700: #1E5DA8;
+      --bg: #F4F7FB;
+      --card: #ffffff;
+      --ok: #28C76F;
+      --text: #16304d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Poppins", "Inter", "Segoe UI", sans-serif;
+      background: radial-gradient(900px 420px at 100% -12%, #d8e9ff, transparent), var(--bg);
+      color: var(--text);
+    }
+    .page { max-width: 980px; margin: 0 auto; padding: 18px; }
+    .topbar {
+      background: linear-gradient(120deg, var(--blue-700), var(--blue-500));
+      border-radius: 16px;
+      color: #fff;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 14px 24px rgba(45, 123, 229, 0.28);
+    }
+    .topbar-title { letter-spacing: 0.2px; }
+    .notif-wrap { position: relative; display: inline-block; }
+    .notif-count {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 10px;
+      background: #ff4d4f;
+      color: #fff;
+      font-size: 11px;
+      line-height: 18px;
+      text-align: center;
+      padding: 0 5px;
+      font-weight: 700;
+      display: none;
+    }
+    .ws-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.5);
+      display: inline-block;
+      margin-right: 8px;
+    }
+    .ws-dot.live {
+      background: #7bffb4;
+      box-shadow: 0 0 0 6px rgba(123, 255, 180, 0.15);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(123, 255, 180, 0.35); }
+      70% { box-shadow: 0 0 0 8px rgba(123, 255, 180, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(123, 255, 180, 0); }
+    }
+    .icon-btn {
+      border: 0;
+      border-radius: 10px;
+      width: 38px;
+      height: 38px;
+      background: rgba(255,255,255,0.16);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .welcome {
+      margin-top: 14px;
+      background: var(--card);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 12px 24px rgba(22, 62, 105, 0.1);
+      gap: 12px;
+    }
+    .welcome h2 { margin: 0; font-size: 1.2rem; }
+    .welcome p { margin: 6px 0 0; color: #4b6583; font-size: 0.92rem; }
+    .avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #d9e9ff, #b9d4ff);
+      display: grid;
+      place-items: center;
+      font-size: 1.55rem;
+    }
+    .feature-grid {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .feature {
+      border-radius: 16px;
+      border: 0;
+      background: #2D7BE5;
+      color: #fff;
+      padding: 14px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 0 12px 22px rgba(45, 123, 229, 0.28);
+      transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .feature:hover { transform: translateY(-2px); box-shadow: 0 16px 28px rgba(45, 123, 229, 0.34); filter: brightness(1.02); }
+    .feature strong { display: block; }
+    .feature small { opacity: 0.9; font-size: 0.82rem; }
+    .qr-block {
+      margin-top: 14px;
+      border-radius: 18px;
+      background: linear-gradient(140deg, #1E5DA8, #2D7BE5);
+      color: #fff;
+      padding: 18px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .qr-block::before {
+      content: "";
+      position: absolute;
+      inset: auto -20% -50% -20%;
+      height: 180px;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.32), transparent 65%);
+    }
+    .qr-shell {
+      width: 180px;
+      height: 180px;
+      margin: 12px auto;
+      border-radius: 24px;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      position: relative;
+      z-index: 1;
+      padding: 10px;
+    }
+    .qr-shell img { width: 100%; height: 100%; object-fit: contain; }
+    .cta {
+      border: 0;
+      border-radius: 12px;
+      background: #fff;
+      color: #1E5DA8;
+      font-weight: 700;
+      padding: 11px 18px;
+      cursor: pointer;
+      position: relative;
+      z-index: 1;
+    }
+    .live-grid {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .live-card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #dce8f6;
+      padding: 10px;
+      box-shadow: 0 8px 18px rgba(17, 54, 95, 0.08);
+    }
+    .live-card small { color: #567296; display: block; margin-bottom: 4px; }
+    .live-card strong { font-size: 1.02rem; }
+    .actions {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .action-btn {
+      background: linear-gradient(120deg, var(--blue-700), var(--blue-500));
+      border: 0;
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      text-align: left;
+      font-weight: 600;
+      color: #fff;
+      box-shadow: 0 12px 22px rgba(45, 123, 229, 0.28);
+      transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .action-btn:hover { transform: translateY(-1px); box-shadow: 0 16px 28px rgba(45, 123, 229, 0.34); filter: brightness(1.02); }
+    .action-btn:active, .feature:active, .cta:active, .icon-btn:active {
+      transform: translateY(0) scale(0.99);
+      filter: brightness(0.98);
+    }
+    .action-btn:disabled, .icon-btn:disabled, .cta:disabled {
+      opacity: 0.75;
+      cursor: not-allowed;
+    }
+    .logout {
+      margin-top: 12px;
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      padding: 12px;
+      background: var(--ok);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .toast {
+      position: fixed;
+      right: 14px;
+      bottom: 14px;
+      background: #111827;
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: 10px;
+      display: none;
+      max-width: 320px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.24);
+    }
+    @media (max-width: 720px) {
+      .feature-grid, .actions, .live-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <button class="icon-btn" type="button" onclick="location.href='/select-role'">&#9776;</button>
+      <strong class="topbar-title"><span id="wsDot" class="ws-dot"></span>Patient Dashboard</strong>
+      <div class="notif-wrap">
+        <button id="notifBtn" class="icon-btn" type="button">&#128276;</button>
+        <span id="notifCount" class="notif-count">0</span>
+      </div>
+    </header>
+
+    <section class="welcome">
+      <div>
+        <h2 id="welcomeName">Welcome, Patient!</h2>
+        <p id="welcomeMeta">UHID: - | Age: - | Blood Group: -</p>
+      </div>
+      <div class="avatar">&#129658;</div>
+    </section>
+
+    <section class="live-grid">
+      <article class="live-card">
+        <small>Profile Sync</small>
+        <strong id="syncTime">-</strong>
+      </article>
+      <article class="live-card">
+        <small>Recent Alerts</small>
+        <strong id="alertCount">0</strong>
+      </article>
+      <article class="live-card">
+        <small>Session State</small>
+        <strong id="sessionState">Active</strong>
+      </article>
+    </section>
+
+    <section class="feature-grid">
+      <article class="feature" id="featureAi" role="button" tabindex="0">
+        <span>&#129302;</span>
+        <span><strong>AI Health Assistant Status</strong><small>Ready for symptom Q&A and lifestyle guidance</small></span>
+      </article>
+      <article class="feature" id="featureArea" role="button" tabindex="0">
+        <span>&#127757;</span>
+        <span><strong>Health in My Area</strong><small>Use notifications panel for local trend alerts</small></span>
+      </article>
+    </section>
+
+    <section class="qr-block">
+      <h3>My Health QR</h3>
+      <div class="qr-shell">
+        <img id="qrImage" alt="Health QR" />
+      </div>
+      <button class="cta" type="button" onclick="location.href='/patient/qr'">Scan Now</button>
+    </section>
+
+    <section class="actions">
+      <button class="action-btn" type="button" data-route="/patient/reports">My Medical Reports</button>
+      <button class="action-btn" type="button" data-route="/patient/timeline">Health History Timeline</button>
+      <button class="action-btn" type="button" data-route="/patient/language-select">Book Consultation (Senior Medical Student)</button>
+      <button class="action-btn" type="button" data-route="/patient/profile-settings">Profile & Settings</button>
+      <button class="action-btn" type="button" data-route="/patient/notifications">Notifications</button>
+      <button class="action-btn" type="button" id="logoutBtn">Logout</button>
+    </section>
+  </main>
+  <div id="toast" class="toast"></div>
+
+  <script>
+    function getPatientId() {
+      return localStorage.getItem('patient_id') || '';
+    }
+    function getPatientToken() {
+      return localStorage.getItem('patient_token') || '';
+    }
+    const notifCountEl = document.getElementById('notifCount');
+    const alertCountEl = document.getElementById('alertCount');
+    const syncTimeEl = document.getElementById('syncTime');
+    const wsDotEl = document.getElementById('wsDot');
+    const sessionStateEl = document.getElementById('sessionState');
+
+    function toast(message) {
+      const t = document.getElementById('toast');
+      t.textContent = message;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 2600);
+    }
+
+    async function parse(res) {
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { detail: txt || ('HTTP ' + res.status) }; }
+      if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : (txt || ('HTTP ' + res.status)));
+      return data;
+    }
+
+    async function loadProfile() {
+      const patientId = getPatientId();
+      if (!patientId) {
+        toast('No active patient session. Redirecting to login.');
+        setTimeout(() => (location.href = '/patient/login'), 700);
+        return;
+      }
+      let profile;
+      try {
+        profile = await parse(await fetch('/api/patient/profile?patient_id=' + encodeURIComponent(patientId)));
+      } catch (err) {
+        localStorage.removeItem('patient_id');
+        localStorage.removeItem('patient_uhid');
+        throw err;
+      }
+      const name = localStorage.getItem('patient_name') || profile.name;
+      const blood = localStorage.getItem('patient_blood_group') || profile.blood_group;
+      document.getElementById('welcomeName').textContent = 'Welcome, ' + name + '!';
+      document.getElementById('welcomeMeta').textContent = 'UHID: ' + profile.uhid + ' | Age: ' + profile.age + ' | Blood Group: ' + blood;
+      localStorage.setItem('patient_uhid', profile.uhid);
+      const qrImage = document.getElementById('qrImage');
+      qrImage.src = '/api/patient/qr?patient_id=' + encodeURIComponent(patientId) + '&t=' + Date.now();
+      syncTimeEl.textContent = new Date().toLocaleTimeString();
+    }
+
+    async function loadNotificationsPreview() {
+      const patientId = getPatientId();
+      if (!patientId) return;
+      try {
+        const data = await parse(await fetch('/api/patient/notifications?patient_id=' + encodeURIComponent(patientId)));
+        const count = Array.isArray(data) ? data.length : 0;
+        if (count > 0) {
+          notifCountEl.style.display = 'inline-block';
+          notifCountEl.textContent = count > 99 ? '99+' : String(count);
+        } else {
+          notifCountEl.style.display = 'none';
+        }
+        alertCountEl.textContent = String(count);
+      } catch {
+        notifCountEl.style.display = 'none';
+      }
+    }
+
+    document.getElementById('notifBtn').addEventListener('click', () => {
+      console.log('patient notifications button clicked');
+      location.href = '/patient/notifications';
+    });
+    document.getElementById('featureAi').addEventListener('click', () => {
+      console.log('patient feature clicked', 'AI Health Assistant');
+      location.href = '/patient/ai-chat';
+    });
+    document.getElementById('featureArea').addEventListener('click', async () => {
+      location.href = '/patient/health-in-my-area';
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      console.log('patient logout clicked');
+      ['patient_id', 'patient_uhid', 'patient_name', 'patient_blood_group', 'patient_pan', 'patient_allergies', 'patient_chronic']
+        .forEach((k) => localStorage.removeItem(k));
+      location.href = '/select-role';
+    });
+
+    function navigateWithFeedback(button, route) {
+      if (!route) return;
+      const original = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Opening...';
+      console.log('patient dashboard navigate', route);
+      location.href = route;
+      setTimeout(() => {
+        button.disabled = false;
+        button.textContent = original;
+      }, 1500);
+    }
+
+    function prefetchRoutes() {
+      const routes = new Set();
+      document.querySelectorAll('[data-route]').forEach((node) => {
+        const route = node.getAttribute('data-route');
+        if (route) routes.add(route);
+      });
+      routes.forEach((route) => {
+        fetch(route, { method: 'GET', credentials: 'same-origin' }).catch(() => null);
+      });
+    }
+
+    Array.from(document.querySelectorAll('.action-btn[data-route]')).forEach((btn) => {
+      btn.addEventListener('click', () => navigateWithFeedback(btn, btn.getAttribute('data-route')));
+    });
+
+    ['featureAi', 'featureArea'].forEach((id) => {
+      const el = document.getElementById(id);
+      el.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        el.click();
+      });
+    });
+
+    (async function init() {
+      try {
+        localStorage.setItem('active_role', 'patient');
+        prefetchRoutes();
+        await loadProfile();
+        await loadNotificationsPreview();
+        const patientId = getPatientId();
+        if (patientId) {
+          const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+          const token = getPatientToken();
+          let ws;
+          const connect = () => {
+            ws = new WebSocket(`${proto}://${location.host}/ws/notifications/patient/${encodeURIComponent(patientId)}?token=${encodeURIComponent(token)}`);
+            wsDotEl.classList.remove('live');
+            sessionStateEl.textContent = 'Connecting';
+            ws.onmessage = (evt) => {
+              try {
+                const payload = JSON.parse(evt.data);
+                if (payload.message) {
+                  if (payload.visit_id) localStorage.setItem('focus_visit_id', payload.visit_id);
+                  toast(payload.message);
+                  loadNotificationsPreview().catch(() => null);
+                  console.log('patient notification', payload);
+                }
+              } catch {}
+            };
+            ws.onopen = () => {
+              wsDotEl.classList.add('live');
+              sessionStateEl.textContent = 'Live';
+            };
+            ws.onclose = () => {
+              wsDotEl.classList.remove('live');
+              sessionStateEl.textContent = 'Reconnecting';
+              setTimeout(connect, 1500);
+            };
+          };
+          connect();
+        }
+        setInterval(() => {
+          loadNotificationsPreview().catch(() => null);
+        }, 15000);
+      } catch (e) {
+        sessionStateEl.textContent = 'Error';
+        toast(e.message || String(e));
+      }
+    })();
+  </script>
+</body>
+</html>
+
+

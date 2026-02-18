@@ -1,0 +1,18 @@
+body{font-family:Segoe UI,Tahoma,sans-serif;background:radial-gradient(circle at top right,#dce9ff,#f7f9ff);margin:0;padding:24px}
+.card{margin-left:30%;margin-right:30%;background:#fff;padding:22px;border-radius:18px;box-shadow:0 18px 36px rgba(24,45,100,.12)}
+.toolbar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+select,input,button{padding:12px;border-radius:12px}
+select,input{border:1px solid #cfdafc}
+button{border:none;background:#2d4cf5;color:#fff;cursor:pointer}
+.grid{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:12px}
+.map,.panel{background:#f8faff;border:1px solid #d8e2ff;border-radius:12px;padding:12px;min-height:240px}
+.india-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.state-box{padding:10px;border-radius:10px;color:#fff;font-weight:700;min-height:64px;display:flex;flex-direction:column;justify-content:center}
+.chart-wrap{margin-top:10px;background:#fff;border:1px solid #dce5ff;border-radius:10px;padding:8px}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px}
+.dot{width:10px;height:10px;border-radius:50%}
+.out{white-space:pre-wrap}
+@media(max-width:1700px){.card{margin-left:15%;margin-right:15%}}
+@media(max-width:1300px){.card{margin-left:8%;margin-right:8%}.toolbar{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:980px){.card{margin-left:2%;margin-right:2%}.toolbar{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}}

@@ -1,0 +1,1188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Senior Medical Student Dashboard</title>
+  <style>
+    :root {
+      --bg: #f4f8ff;
+      --card: #ffffff;
+      --line: #d9e6f7;
+      --text: #17324f;
+      --muted: #5a7594;
+      --blue: #2563eb;
+      --green: #16a34a;
+      --orange: #f59e0b;
+      --violet: #7c3aed;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1000px 420px at 100% -20%, #deebff, transparent),
+        radial-gradient(900px 450px at -10% 120%, #e9f3ff, transparent),
+        var(--bg);
+    }
+    .page {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 280px 1fr 330px;
+      gap: 12px;
+      min-height: 100vh;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 10px 24px rgba(30, 72, 120, 0.11);
+    }
+    .sidebar { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .profile {
+      border: 1px solid #cfe1fb;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #f8fbff, #edf4ff);
+      padding: 12px;
+      text-align: center;
+    }
+    .avatar {
+      width: 72px; height: 72px; margin: 0 auto 8px;
+      border-radius: 50%;
+      background: linear-gradient(130deg, #cfe2ff, #b9d4ff);
+      display: grid; place-items: center; font-size: 30px;
+    }
+    .profile h3 { margin: 0; font-size: 1rem; }
+    .profile p { margin: 4px 0 0; font-size: .83rem; color: var(--muted); }
+    .rating { margin-top: 8px; font-weight: 700; color: #184d8d; }
+    .pill {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: #e9f7ef;
+      color: #0d7f43;
+      border: 1px solid #bde9d0;
+      font-size: .74rem;
+      font-weight: 700;
+    }
+    .sidebar button, .sidebar select {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      padding: 10px;
+      font-family: inherit;
+      font-size: .9rem;
+    }
+    .sidebar button { background: #fff; color: #1f436a; font-weight: 600; cursor: pointer; text-align: left; }
+    .main { display: grid; grid-template-rows: minmax(360px, 1fr) minmax(330px, auto); gap: 12px; }
+    .chat-card { display: flex; flex-direction: column; min-height: 360px; }
+    .chat-head {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex; justify-content: space-between; align-items: center;
+      font-weight: 700;
+    }
+    .chat-body {
+      flex: 1;
+      padding: 12px;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .bubble {
+      max-width: 82%;
+      border-radius: 12px;
+      padding: 10px 12px;
+      line-height: 1.4;
+      font-size: .86rem;
+    }
+    .bubble.patient { align-self: flex-start; background: #f5f9ff; border: 1px solid #d7e7ff; }
+    .bubble.doctor { align-self: flex-end; background: #e3f0ff; border: 1px solid #bdd8ff; }
+    .chat-input {
+      border-top: 1px solid var(--line);
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 8px;
+    }
+    .chat-input input {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 11px;
+      font-family: inherit;
+    }
+    .send-btn, .voice-btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .send-btn { background: linear-gradient(120deg, #1e53bb, var(--blue)); }
+    .voice-btn { background: linear-gradient(120deg, #0f766e, #14b8a6); }
+    .voice-btn.recording { background: linear-gradient(120deg, #b91c1c, #dc2626); }
+
+    .analytics { padding: 12px; }
+    .analytics-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .analytics-head h3 { margin: 0; font-size: 1rem; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    .controls select, .controls button {
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 8px 10px;
+      background: #fff;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .controls button.active { background: var(--blue); color: #fff; border-color: #2a62c8; }
+    .stats {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .stats article {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px;
+      background: #f9fcff;
+    }
+    .stats span { display: block; color: var(--muted); font-size: .78rem; }
+    .stats strong { font-size: 1.05rem; }
+    .canvas-wrap { margin-top: 10px; height: 210px; min-height: 210px; max-height: 210px; }
+    .canvas-wrap canvas { width: 100% !important; height: 100% !important; }
+    .legend { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 7px; }
+    .legend .item {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: .76rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .ai-insight {
+      margin-top: 8px;
+      border: 1px dashed #c5daf4;
+      border-radius: 10px;
+      background: #f8fbff;
+      min-height: 56px;
+      padding: 9px;
+      font-size: .82rem;
+      color: #375474;
+      white-space: pre-wrap;
+    }
+
+    .right { padding: 12px; display: flex; flex-direction: column; gap: 9px; }
+    .right h3 { margin: 0; font-size: .96rem; }
+    .notif {
+      border: 1px solid #cfe1fb;
+      border-radius: 10px;
+      background: #f8fbff;
+      padding: 10px;
+      color: #375c83;
+      font-size: .84rem;
+    }
+    .request-card {
+      border: 1px solid #cfe1fb;
+      border-radius: 12px;
+      background: #fff;
+      padding: 10px;
+    }
+    .request-card p { margin: 4px 0; color: #47688d; font-size: .84rem; }
+    .request-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .mini-btn {
+      flex: 1; border: 0; border-radius: 9px; padding: 9px; font-weight: 700; cursor: pointer;
+    }
+    button:disabled, .mini-btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+      filter: grayscale(.2);
+    }
+    .mini-btn.accept { background: var(--green); color: #fff; }
+    .mini-btn.reject { background: #eef4ff; color: #2b5485; border: 1px solid #c9ddfa; }
+    .right .action-btn {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fff;
+      color: #22456f;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+    }
+    .status {
+      margin-top: auto;
+      min-height: 80px;
+      border: 1px dashed #c7daf3;
+      border-radius: 10px;
+      background: #f9fcff;
+      padding: 10px;
+      font-size: .78rem;
+      color: #3b5877;
+      white-space: pre-wrap;
+    }
+    .toast {
+      position: fixed;
+      right: 14px;
+      bottom: 14px;
+      background: #111827;
+      color: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: none;
+      max-width: 320px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.24);
+    }
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 21, 42, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+      padding: 16px;
+    }
+    .modal-card {
+      width: min(860px, 100%);
+      max-height: 86vh;
+      overflow: auto;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(16, 46, 88, 0.2);
+      padding: 14px;
+    }
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .profile-grid input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      font-family: inherit;
+    }
+    .patient-list {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .patient-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1.2fr;
+      gap: 8px;
+      padding: 8px 10px;
+      border-top: 1px solid #e3edf8;
+      font-size: .82rem;
+    }
+    .patient-row.head {
+      background: #f4f8ff;
+      font-weight: 700;
+      border-top: 0;
+    }
+    @media (max-width: 1220px) {
+      .page { grid-template-columns: 1fr; }
+      .main { grid-template-rows: 1fr auto; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <aside class="card sidebar">
+      <section class="profile">
+        <div class="avatar">&#129658;</div>
+        <h3 id="studentName">Senior Medical Student</h3>
+        <p>Consultant Dashboard</p>
+        <div class="rating">&#11088; <span id="ratingValue">0.0</span></div>
+        <span class="pill">Verified</span>
+      </section>
+
+      <button type="button" id="homeBtn">Home</button>
+      <button type="button" id="profileBtn">Profile</button>
+      <button type="button" id="ratingsBtn">Ratings</button>
+      <button type="button" id="languageBtn">Language</button>
+      <button id="incomingBtn" type="button">Session Requests</button>
+      <button id="logoutBtn" type="button">Logout</button>
+
+      <div class="card" style="padding:10px">
+        <strong style="font-size:.85rem">Consultation Languages</strong>
+        <div id="languageChecks" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;font-size:.83rem"></div>
+      </div>
+    </aside>
+
+    <section class="main">
+      <section class="card chat-card">
+        <header class="chat-head">
+          <span>Realtime Consultation Chat</span>
+          <span id="sessionBadge">Session: -</span>
+        </header>
+        <div class="chat-body" id="chatBody">
+          <div class="bubble patient">Patient messages will appear here once consultation starts.</div>
+        </div>
+        <div class="chat-input">
+          <input id="chatInput" placeholder="Type response..." />
+          <button id="voiceBtn" class="voice-btn" type="button">Voice</button>
+          <button id="sendBtn" class="send-btn" type="button">Send</button>
+        </div>
+      </section>
+
+      <section class="card analytics">
+        <div class="analytics-head">
+          <h3>Interaction Trends (Government Style)</h3>
+          <div class="controls">
+            <select id="trendDays">
+              <option value="7">Last 7 Days</option>
+              <option value="30" selected>Last 30 Days</option>
+              <option value="365">Last 1 Year</option>
+            </select>
+            <button id="multiBtn" type="button" class="active">Multi-Color</button>
+            <button id="singleBtn" type="button">Single-Color</button>
+            <select id="singleSeriesSelect">
+              <option value="sessions">Total Sessions</option>
+              <option value="video_sessions">Video Sessions</option>
+              <option value="chat_sessions">Chat Sessions</option>
+              <option value="chat_messages">Chat Messages</option>
+              <option value="session_duration">Session Duration</option>
+              <option value="user_activity">User Activity</option>
+              <option value="connection_quality">Connection Quality</option>
+              <option value="health_metrics">Health Metrics</option>
+            </select>
+            <button id="aiInsightBtn" type="button">AI Insight</button>
+          </div>
+        </div>
+        <div class="stats">
+          <article><span>Total Sessions</span><strong id="mTotal">0</strong></article>
+          <article><span>Active</span><strong id="mActive">0</strong></article>
+          <article><span>Pending</span><strong id="mPending">0</strong></article>
+          <article><span>Chat Messages</span><strong id="mMessages">0</strong></article>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="trendChart"></canvas>
+        </div>
+        <div id="legend" class="legend"></div>
+        <div id="aiInsight" class="ai-insight">AI trend insight will appear here.</div>
+      </section>
+    </section>
+
+    <aside class="card right">
+      <h3>Incoming Consultation Requests</h3>
+      <div class="notif">Accept within 5-10 minutes. Expired requests are auto-reassigned.</div>
+
+      <article class="request-card" id="requestCard">
+        <strong id="requestTitle">No active request</strong>
+        <p id="requestUhid">UHID: -</p>
+        <p id="requestPatient">Patient: -</p>
+        <p id="requestProblem">Problem: -</p>
+        <div class="request-actions">
+          <button class="mini-btn accept" id="answerBtn" type="button">Accept</button>
+          <button class="mini-btn reject" id="rejectBtn" type="button">Reject</button>
+        </div>
+      </article>
+
+      <button class="action-btn" id="openVideoBtn" type="button">Open Video Session</button>
+      <button class="action-btn" id="endBtn" type="button">End Session</button>
+      <pre id="status" class="status"></pre>
+    </aside>
+  </main>
+  <section class="modal" id="profileModal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <strong>Student Profile</strong>
+        <button id="closeProfileBtn" type="button" class="action-btn" style="width:auto;padding:8px 10px">Close</button>
+      </div>
+      <div class="profile-grid">
+        <div><label>Student ID</label><input id="pfStudentId" readonly /></div>
+        <div><label>College ID (Locked)</label><input id="pfCollegeId" readonly /></div>
+        <div><label>Full Name</label><input id="pfName" /></div>
+        <div><label>Institute Name</label><input id="pfInstitute" /></div>
+        <div><label>Official Email</label><input id="pfEmail" /></div>
+        <div><label>Phone</label><input id="pfPhone" /></div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <strong>Average Rating:</strong>
+        <span id="pfRating">0.0</span>
+        <span id="pfRatingCount">(0 ratings)</span>
+        <button id="saveProfileBtn" type="button" class="send-btn" style="margin-left:auto">Save Profile</button>
+      </div>
+      <div class="patient-list" id="profilePatients">
+        <div class="patient-row head"><span>Patient</span><span>UHID</span><span>Status</span><span>Last Problem</span></div>
+      </div>
+    </div>
+  </section>
+  <div id="toast" class="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const el = (id) => document.getElementById(id);
+    const studentId = localStorage.getItem('student_id') || '';
+    const studentToken = localStorage.getItem('student_token') || '';
+    let currentSessionId = localStorage.getItem('session_id') || '';
+    let sessionPhase = currentSessionId ? 'pending' : 'none';
+    let pendingRequest = null;
+    let chatWs = null;
+    let trendChart = null;
+    let analyticsData = null;
+    let chartMode = 'multi';
+    let currentProfile = null;
+    let selectedLanguages = new Set();
+    const allLanguages = ['English', 'Hindi', 'Tamil', 'Telugu', 'Kannada', 'Malayalam', 'Marathi', 'Bengali'];
+    const seriesMeta = {
+      sessions: { label: 'Total Sessions', color: '#2563eb' },
+      video_sessions: { label: 'Video Sessions', color: '#f59e0b' },
+      chat_sessions: { label: 'Chat Sessions', color: '#16a34a' },
+      chat_messages: { label: 'Chat Messages', color: '#7c3aed' },
+      session_duration: { label: 'Session Duration', color: '#0ea5e9' },
+      user_activity: { label: 'User Activity', color: '#ef4444' },
+      connection_quality: { label: 'Connection Quality', color: '#14b8a6' },
+      health_metrics: { label: 'Health Metrics', color: '#a855f7' },
+    };
+    const enabledSeries = new Set(['sessions', 'chat_messages', 'user_activity', 'connection_quality']);
+    const authHeaders = () => studentToken ? { 'Authorization': 'Bearer ' + studentToken } : {};
+
+    function show(v) {
+      el('status').textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2);
+    }
+    function setBusy(btn, busy, busyText, idleText) {
+      if (!btn) return;
+      if (!btn.dataset.idleText) btn.dataset.idleText = idleText || btn.textContent || '';
+      btn.disabled = !!busy;
+      btn.textContent = busy ? (busyText || 'Working...') : (idleText || btn.dataset.idleText);
+    }
+    function toast(message) {
+      const t = el('toast');
+      t.textContent = message;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 2600);
+    }
+    async function parse(res) {
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { detail: txt || ('HTTP ' + res.status) }; }
+      if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : (txt || ('HTTP ' + res.status)));
+      return data;
+    }
+    function normalizeLanguages(v) {
+      if (!v) return [];
+      if (Array.isArray(v)) return v.map((x) => String(x).trim()).filter(Boolean);
+      return String(v).split(',').map((x) => x.trim()).filter(Boolean);
+    }
+    function renderLanguageChecks() {
+      const wrap = el('languageChecks');
+      wrap.innerHTML = '';
+      allLanguages.forEach((lang) => {
+        const id = 'lang_' + lang.toLowerCase();
+        const row = document.createElement('label');
+        row.setAttribute('for', id);
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.gap = '6px';
+        row.innerHTML = `<input id="${id}" type="checkbox" ${selectedLanguages.has(lang) ? 'checked' : ''} />${lang}`;
+        wrap.appendChild(row);
+        row.querySelector('input').addEventListener('change', (ev) => {
+          if (ev.target.checked) selectedLanguages.add(lang); else selectedLanguages.delete(lang);
+        });
+      });
+    }
+
+    function setSessionLabel() {
+      el('sessionBadge').textContent = 'Session: ' + (currentSessionId || '-');
+    }
+    function setActionState(phase) {
+      const hasSession = phase !== 'none';
+      const pending = phase === 'pending';
+      const active = phase === 'active';
+      el('answerBtn').disabled = !pending;
+      el('rejectBtn').disabled = !pending;
+      el('openVideoBtn').disabled = !active;
+      el('endBtn').disabled = !active;
+      el('sendBtn').disabled = !active;
+      el('voiceBtn').disabled = !active;
+      el('chatInput').disabled = !active;
+      if (!hasSession) el('chatInput').value = '';
+      el('sendBtn').disabled = !active || !el('chatInput').value.trim();
+    }
+
+    async function fetchSessionStatus(sessionId) {
+      if (!sessionId) throw new Error('No active session.');
+      return parse(await fetch('/api/session/status/' + encodeURIComponent(sessionId), { headers: { ...authHeaders() } }));
+    }
+
+    async function syncCurrentSessionFromServer() {
+      if (!currentSessionId) return null;
+      const info = await fetchSessionStatus(currentSessionId);
+      sessionPhase = String(info.status || '').toLowerCase() || 'none';
+      if (sessionPhase === 'ended' || sessionPhase === 'rejected') {
+        sessionPhase = 'none';
+        currentSessionId = '';
+        pendingRequest = null;
+        localStorage.removeItem('session_id');
+        localStorage.removeItem('session_mode');
+        setSessionLabel();
+        setActionState(sessionPhase);
+        return null;
+      }
+      setSessionLabel();
+      setActionState(sessionPhase);
+      return info;
+    }
+
+    function connectSessionWs() {
+      if (!currentSessionId || !studentId) return;
+      if (chatWs && (chatWs.readyState === WebSocket.OPEN || chatWs.readyState === WebSocket.CONNECTING)) return;
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      const tokenQ = encodeURIComponent(studentToken || '');
+      chatWs = new WebSocket(`${proto}://${location.host}/ws/chat/${encodeURIComponent(currentSessionId)}?token=${tokenQ}`);
+      chatWs.onmessage = (evt) => {
+        try {
+          const payload = JSON.parse(evt.data);
+          if (payload.type === 'chat' && payload.text && payload.sender_id !== studentId) {
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble patient';
+            bubble.textContent = 'Patient: ' + payload.text;
+            el('chatBody').appendChild(bubble);
+            el('chatBody').scrollTop = el('chatBody').scrollHeight;
+          }
+        } catch {}
+      };
+      chatWs.onclose = () => { chatWs = null; setTimeout(connectSessionWs, 1500); };
+    }
+
+    async function goOnline() {
+      if (!studentId) throw new Error('Student not logged in.');
+      if (!selectedLanguages.size) selectedLanguages.add('English');
+      const language = Array.from(selectedLanguages).join(',');
+      const data = await parse(await fetch('/api/student/online', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId, language }),
+      }));
+      localStorage.setItem('student_language', language);
+      show({ online: true, language, response: data });
+    }
+
+    async function loadIncoming() {
+      if (!studentId) throw new Error('Student not logged in.');
+      const data = await parse(await fetch('/api/student/pending-requests/' + encodeURIComponent(studentId)));
+      const first = (data.requests || [])[0];
+      if (!first) {
+        if (currentSessionId) {
+          try {
+            const info = await syncCurrentSessionFromServer();
+            if (info && info.status === 'active') {
+              pendingRequest = {
+                session_id: info.session_id,
+                patient_id: info.patient_id,
+                mode: info.mode,
+                problem: 'Active consultation',
+              };
+              el('requestTitle').textContent = 'Active Session';
+              el('requestUhid').textContent = 'UHID: -';
+              el('requestPatient').textContent = 'Patient: ' + (info.patient_id || '-');
+              el('requestProblem').textContent = 'Problem: Active consultation';
+              connectSessionWs();
+              return;
+            }
+          } catch {}
+        }
+        pendingRequest = null;
+        sessionPhase = 'none';
+        currentSessionId = '';
+        localStorage.removeItem('session_id');
+        localStorage.removeItem('session_mode');
+        setSessionLabel();
+        setActionState(sessionPhase);
+        el('requestTitle').textContent = 'No active request';
+        el('requestUhid').textContent = 'UHID: -';
+        el('requestPatient').textContent = 'Patient: -';
+        el('requestProblem').textContent = 'Problem: -';
+        show('No pending requests.');
+        return;
+      }
+      pendingRequest = first;
+      sessionPhase = 'pending';
+      currentSessionId = first.session_id;
+      localStorage.setItem('session_id', currentSessionId);
+      if (first.mode) localStorage.setItem('session_mode', String(first.mode).toLowerCase());
+      setSessionLabel();
+      connectSessionWs();
+      setActionState(sessionPhase);
+      el('requestTitle').textContent = 'Patient ' + (first.patient_id || '-');
+      el('requestUhid').textContent = 'UHID: ' + (first.patient_uhid || '-');
+      el('requestPatient').textContent = 'Patient: ' + (first.patient_name || first.patient_id || '-');
+      el('requestProblem').textContent = 'Problem: ' + (first.problem || '-');
+      show(first);
+    }
+
+    async function acceptRequest() {
+      if (!currentSessionId && pendingRequest?.session_id) currentSessionId = pendingRequest.session_id;
+      if (!currentSessionId) throw new Error('No session selected.');
+      const data = await parse(await fetch('/api/session/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ session_id: currentSessionId }),
+      }));
+      localStorage.setItem('session_id', currentSessionId);
+      const acceptedMode = ((pendingRequest && pendingRequest.mode) || data.mode || localStorage.getItem('session_mode') || 'chat').toLowerCase();
+      sessionPhase = 'active';
+      localStorage.setItem('session_mode', acceptedMode);
+      connectSessionWs();
+      location.href = acceptedMode === 'video' ? '/session/video?role=student' : '/session/chat?role=student';
+    }
+
+    async function rejectRequest() {
+      if (!currentSessionId && pendingRequest?.session_id) currentSessionId = pendingRequest.session_id;
+      if (!currentSessionId) throw new Error('No session selected.');
+      const data = await parse(await fetch('/api/session/reject-rematch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ session_id: currentSessionId }),
+      }));
+      if (data.rematched && data.session_id) {
+        currentSessionId = data.session_id;
+        localStorage.setItem('session_id', currentSessionId);
+        if (data.mode) localStorage.setItem('session_mode', String(data.mode).toLowerCase());
+        toast('Request reassigned to another student.');
+      } else {
+        currentSessionId = '';
+        pendingRequest = null;
+        localStorage.removeItem('session_id');
+        localStorage.removeItem('session_mode');
+        toast('Request rejected. No replacement student available.');
+      }
+      setSessionLabel();
+      await loadIncoming();
+    }
+
+    async function sendChat(messageOverride) {
+      const message = (messageOverride ?? el('chatInput').value).trim();
+      if (!message) return;
+      if (!currentSessionId && pendingRequest?.session_id) currentSessionId = pendingRequest.session_id;
+      if (!currentSessionId) throw new Error('No active session to send chat.');
+      if (sessionPhase !== 'active') throw new Error('Accept the request before sending messages.');
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble doctor';
+      bubble.textContent = 'Consultant: ' + message;
+      el('chatBody').appendChild(bubble);
+      el('chatBody').scrollTop = el('chatBody').scrollHeight;
+
+      if (chatWs && chatWs.readyState === WebSocket.OPEN) {
+        chatWs.send(JSON.stringify({ type: 'chat', text: message, session_id: currentSessionId, sender_id: studentId }));
+      }
+      await parse(await fetch('/api/chat/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: currentSessionId,
+          sender_role: 'student_consultant',
+          sender_id: studentId,
+          message_text: message,
+        }),
+      }));
+      el('chatInput').value = '';
+      el('sendBtn').disabled = true;
+    }
+
+    const voiceChatState = { recording:false, stream:null, recorder:null, chunks:[], sr:null, srBuffer:'' };
+    function setVoiceChatUi(on){
+      const b = el('voiceBtn');
+      b.classList.toggle('recording', !!on);
+      b.style.background = on ? '#c53030' : 'linear-gradient(120deg, #0f766e, #14b8a6)';
+      b.style.color = '#fff';
+      b.textContent = on ? 'Stop Voice' : 'Voice';
+    }
+    function preferredSpeechLang(){
+      const raw = (localStorage.getItem('student_language') || localStorage.getItem('consult_language') || localStorage.getItem('language_preference') || 'english').toLowerCase();
+      const map = {
+        english:'en-IN', en:'en-IN',
+        hindi:'hi-IN', hindhi:'hi-IN', hi:'hi-IN',
+        telugu:'te-IN', telgu:'te-IN', te:'te-IN',
+        tamil:'ta-IN', ta:'ta-IN',
+        kannada:'kn-IN', kannda:'kn-IN', kn:'kn-IN',
+        marathi:'mr-IN', marati:'mr-IN', mr:'mr-IN',
+        malayalam:'ml-IN', ml:'ml-IN',
+        gujarati:'gu-IN', gu:'gu-IN',
+        bengali:'bn-IN', bn:'bn-IN',
+        punjabi:'pa-IN', pa:'pa-IN',
+        odia:'or-IN', oriya:'or-IN', or:'or-IN',
+        urdu:'ur-IN', ur:'ur-IN',
+        assamese:'as-IN', as:'as-IN',
+        nepali:'ne-IN', ne:'ne-IN',
+        sanskrit:'sa-IN', sa:'sa-IN'
+      };
+      return map[(raw || '').trim()] || 'en-IN';
+    }
+    async function captureVoiceChat() {
+      if (!currentSessionId && pendingRequest?.session_id) currentSessionId = pendingRequest.session_id;
+      if (!currentSessionId) throw new Error('No active session to send voice.');
+      if (sessionPhase !== 'active') throw new Error('Accept the request before sending voice.');
+
+      if (voiceChatState.recording) {
+        voiceChatState.recording = false;
+        setVoiceChatUi(false);
+
+        if (voiceChatState.sr) {
+          const rec = voiceChatState.sr;
+          voiceChatState.sr = null;
+          try { rec.onend = null; rec.stop(); } catch {}
+          const transcript = String(voiceChatState.srBuffer || '').trim();
+          voiceChatState.srBuffer = '';
+          if (!transcript) throw new Error('No speech detected.');
+          await sendChat(transcript);
+          return;
+        }
+
+        const rec = voiceChatState.recorder;
+        const stream = voiceChatState.stream;
+        voiceChatState.recorder = null;
+        voiceChatState.stream = null;
+        if (!rec || !stream) throw new Error('Microphone stream unavailable.');
+        await new Promise((resolve) => {
+          rec.onstop = resolve;
+          try { rec.stop(); } catch { resolve(); }
+        });
+        try { stream.getTracks().forEach((t) => t.stop()); } catch {}
+        const blob = new Blob(voiceChatState.chunks, { type: 'audio/webm' });
+        voiceChatState.chunks = [];
+        const fd = new FormData();
+        fd.append('file', blob, 'student_voice.webm');
+        fd.append('language', preferredSpeechLang());
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 15000);
+        let d = null;
+        try { d = await parse(await fetch('/api/transcribe', { method: 'POST', body: fd, signal: ctrl.signal })); }
+        finally { clearTimeout(timer); }
+        if (d.warning) show(d.warning);
+        const transcript = (d.transcript || '').trim();
+        if (!transcript) throw new Error('No speech detected. Please speak louder and try again.');
+        await sendChat(transcript);
+        return;
+      }
+
+      voiceChatState.recording = true;
+      setVoiceChatUi(true);
+      show('Recording voice... click Voice again to stop.');
+      if (!navigator.mediaDevices || !window.MediaRecorder) {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) throw new Error('Voice recording unsupported.');
+        voiceChatState.srBuffer = '';
+        const rec = new SR();
+        rec.lang = preferredSpeechLang();
+        rec.interimResults = true;
+        rec.continuous = true;
+        rec.maxAlternatives = 1;
+        rec.onresult = (e) => {
+          let finalChunk = '';
+          for(let i=e.resultIndex;i<e.results.length;i++){
+            const r = e.results[i];
+            const txt = ((r && r[0] && r[0].transcript) || '').trim();
+            if(!txt) continue;
+            if(r.isFinal) finalChunk += (finalChunk ? ' ' : '') + txt;
+          }
+          if(finalChunk) voiceChatState.srBuffer += (voiceChatState.srBuffer ? ' ' : '') + finalChunk;
+        };
+        rec.onerror = () => {};
+        rec.onend = () => {
+          if (voiceChatState.recording && voiceChatState.sr) {
+            try { rec.start(); } catch {}
+          }
+        };
+        voiceChatState.sr = rec;
+        try { rec.start(); } catch (err) { voiceChatState.sr = null; throw err; }
+        return;
+      }
+      voiceChatState.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      voiceChatState.chunks = [];
+      const mime = (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) ? 'audio/webm;codecs=opus' : 'audio/webm';
+      voiceChatState.recorder = new MediaRecorder(voiceChatState.stream, { mimeType: mime });
+      voiceChatState.recorder.ondataavailable = (e) => { if (e.data && e.data.size) voiceChatState.chunks.push(e.data); };
+      voiceChatState.recorder.start(1000);
+    }
+
+    async function loadRatings() {
+      if (!studentId) return;
+      try {
+        const data = await parse(await fetch('/api/student/ratings/' + encodeURIComponent(studentId)));
+        if (typeof data.rating_avg === 'number') el('ratingValue').textContent = data.rating_avg.toFixed(1);
+        if (currentProfile) {
+          currentProfile.rating_avg = Number(data.rating_avg || 0);
+          currentProfile.rating_count = Number(data.rating_count || 0);
+          el('pfRating').textContent = currentProfile.rating_avg.toFixed(1);
+          el('pfRatingCount').textContent = `(${currentProfile.rating_count} ratings)`;
+        }
+      } catch {}
+    }
+
+    function renderProfilePatients(rows) {
+      const box = el('profilePatients');
+      box.innerHTML = '<div class="patient-row head"><span>Patient</span><span>UHID</span><span>Status</span><span>Last Problem</span></div>';
+      (rows || []).forEach((r) => {
+        const row = document.createElement('div');
+        row.className = 'patient-row';
+        row.innerHTML = `<span>${r.patient_name || r.patient_id || '-'}</span><span>${r.uhid || '-'}</span><span>${r.last_status || '-'}</span><span>${r.last_problem || '-'}</span>`;
+        box.appendChild(row);
+      });
+      if (!(rows || []).length) {
+        const row = document.createElement('div');
+        row.className = 'patient-row';
+        row.innerHTML = '<span>-</span><span>-</span><span>-</span><span>No patient history yet</span>';
+        box.appendChild(row);
+      }
+    }
+
+    async function loadProfile() {
+      if (!studentId) throw new Error('Student not logged in.');
+      const data = await parse(await fetch('/api/student/profile?student_id=' + encodeURIComponent(studentId)));
+      currentProfile = data;
+      el('studentName').textContent = data.full_name || ('Consultant ' + studentId);
+      el('pfStudentId').value = data.student_id || studentId;
+      el('pfCollegeId').value = data.college_id || '-';
+      el('pfName').value = data.full_name || '';
+      el('pfInstitute').value = data.institute_name || '';
+      el('pfEmail').value = data.official_email || '';
+      el('pfPhone').value = data.phone || '';
+      el('pfRating').textContent = Number(data.rating_avg || 0).toFixed(1);
+      el('pfRatingCount').textContent = `(${Number(data.rating_count || 0)} ratings)`;
+      selectedLanguages = new Set(normalizeLanguages(data.languages));
+      if (!selectedLanguages.size) selectedLanguages.add('English');
+      renderLanguageChecks();
+      renderProfilePatients(data.recent_patients || []);
+    }
+
+    async function saveProfile() {
+      if (!studentId) throw new Error('Student not logged in.');
+      if (!selectedLanguages.size) selectedLanguages.add('English');
+      const payload = {
+        student_id: studentId,
+        full_name: el('pfName').value.trim(),
+        institute_name: el('pfInstitute').value.trim(),
+        official_email: el('pfEmail').value.trim(),
+        phone: el('pfPhone').value.trim(),
+        languages: Array.from(selectedLanguages),
+      };
+      const data = await parse(await fetch('/api/student/profile/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }));
+      currentProfile = data;
+      localStorage.setItem('student_language', (data.languages || []).join(','));
+      await goOnline();
+      await loadProfile();
+      toast('Profile updated successfully.');
+      show(data);
+    }
+
+    async function openVideo() {
+      if (!currentSessionId && pendingRequest?.session_id) currentSessionId = pendingRequest.session_id;
+      if (!currentSessionId) throw new Error('No active session.');
+      if (sessionPhase !== 'active') throw new Error('Accept the request before opening video session.');
+      await parse(await fetch('/api/session/video-join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ session_id: currentSessionId, requester_id: studentId }),
+      }));
+      localStorage.setItem('session_id', currentSessionId);
+      localStorage.setItem('session_mode', 'video');
+      location.href = '/session/video?role=student';
+    }
+
+    async function endSession() {
+      if (!currentSessionId && pendingRequest?.session_id) currentSessionId = pendingRequest.session_id;
+      if (!currentSessionId) throw new Error('No active session.');
+      if (sessionPhase !== 'active') throw new Error('No active session to end.');
+      await parse(await fetch('/api/session/end', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ session_id: currentSessionId }),
+      }));
+      currentSessionId = '';
+      pendingRequest = null;
+      sessionPhase = 'none';
+      if (chatWs) { try { chatWs.close(); } catch {} chatWs = null; }
+      localStorage.removeItem('session_id');
+      localStorage.removeItem('session_mode');
+      setSessionLabel();
+      setActionState(sessionPhase);
+      el('chatBody').innerHTML = '<div class="bubble patient">Session ended. Waiting for next consultation.</div>';
+      await loadAnalytics();
+      toast('Session ended successfully.');
+    }
+
+    function renderLegend() {
+      const legend = el('legend');
+      legend.innerHTML = '';
+      const keys = chartMode === 'single' ? [el('singleSeriesSelect').value] : Array.from(enabledSeries);
+      keys.forEach((k) => {
+        const meta = seriesMeta[k];
+        if (!meta) return;
+        const item = document.createElement('span');
+        item.className = 'item';
+        item.innerHTML = `<span class="dot" style="background:${meta.color}"></span>${meta.label}`;
+        item.onclick = () => {
+          if (chartMode === 'single') return;
+          if (enabledSeries.has(k)) enabledSeries.delete(k); else enabledSeries.add(k);
+          renderTrendChart();
+        };
+        legend.appendChild(item);
+      });
+    }
+
+    function renderTrendChart() {
+      if (!analyticsData) return;
+      const trend = analyticsData.trend || [];
+      const labels = trend.map((x) => String(x.date).slice(5));
+      let keys = chartMode === 'single' ? [el('singleSeriesSelect').value] : Array.from(enabledSeries);
+      if (!keys.length) keys = ['sessions'];
+
+      const datasets = keys.map((k) => {
+        const meta = seriesMeta[k] || { label: k, color: '#2563eb' };
+        return {
+          label: meta.label,
+          data: trend.map((x) => Number(x[k] || 0)),
+          borderColor: meta.color,
+          backgroundColor: meta.color,
+          tension: 0.35,
+          fill: false,
+        };
+      });
+
+      if (trendChart) trendChart.destroy();
+      trendChart = new Chart(el('trendChart').getContext('2d'), {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { title: { display: true, text: 'Date' } },
+            y: { beginAtZero: true, title: { display: true, text: 'Count' } },
+          },
+        },
+      });
+      renderLegend();
+    }
+
+    async function loadAnalytics() {
+      if (!studentId) return;
+      const days = Number(el('trendDays').value || 30);
+      analyticsData = await parse(await fetch(`/api/student/analytics/${encodeURIComponent(studentId)}?days=${days}`));
+      const metricsExtra = await parse(await fetch(`/api/metrics?student_id=${encodeURIComponent(studentId)}&days=${days}`));
+      const durationByDate = {};
+      const activityByDate = {};
+      const qualityByDate = {};
+      const healthByDate = {};
+      ((metricsExtra.metrics && metricsExtra.metrics.session_duration) || []).forEach((r) => { if (r && r.date) durationByDate[r.date] = Number(r.value || 0); });
+      ((metricsExtra.metrics && metricsExtra.metrics.user_activity) || []).forEach((r) => { if (r && r.date) activityByDate[r.date] = Number(r.value || 0); });
+      ((metricsExtra.metrics && metricsExtra.metrics.connection_quality) || []).forEach((r) => { if (r && r.date) qualityByDate[r.date] = Number(r.value || 0); });
+      ((metricsExtra.metrics && metricsExtra.metrics.health_metrics) || []).forEach((r) => { if (r && r.date) healthByDate[r.date] = Number(r.value || 0); });
+      analyticsData.trend = (analyticsData.trend || []).map((row) => {
+        const d = row.date;
+        return {
+          ...row,
+          session_duration: Number(durationByDate[d] || 0),
+          user_activity: Number(activityByDate[d] || 0),
+          connection_quality: Number(qualityByDate[d] || 0),
+          health_metrics: Number(healthByDate[d] || 0),
+        };
+      });
+      const m = analyticsData.metrics || {};
+      el('mTotal').textContent = String(m.total_sessions || 0);
+      el('mActive').textContent = String(m.active_sessions || 0);
+      el('mPending').textContent = String(m.pending_sessions || 0);
+      el('mMessages').textContent = String(m.chat_messages || 0);
+      if (metricsExtra.no_data || !(analyticsData.trend || []).length) {
+        el('aiInsight').textContent = 'No Data Available';
+      }
+      renderTrendChart();
+      console.log('student analytics', { analyticsData, metricsExtra });
+    }
+
+    async function generateAiInsight() {
+      if (!analyticsData) return;
+      const m = analyticsData.metrics || {};
+      const last = (analyticsData.trend || []).slice(-7);
+      const prompt = `Student consultation analytics summary. Total sessions: ${m.total_sessions || 0}, active: ${m.active_sessions || 0}, pending: ${m.pending_sessions || 0}, video: ${m.video_sessions || 0}, chat sessions: ${m.chat_sessions || 0}, chat messages: ${m.chat_messages || 0}. Last trend rows: ${JSON.stringify(last)}. Give 4 short operational insights.`;
+      el('aiInsight').textContent = 'Generating AI insight...';
+      try {
+        const resp = await parse(await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: prompt, session_id: currentSessionId || null }),
+        }));
+        el('aiInsight').textContent = resp.response || 'No insight generated.';
+      } catch (e) {
+        el('aiInsight').textContent = e.message || String(e);
+      }
+    }
+
+    selectedLanguages = new Set(normalizeLanguages(localStorage.getItem('student_language') || 'English'));
+    if (!selectedLanguages.size) selectedLanguages.add('English');
+    renderLanguageChecks();
+    setSessionLabel();
+
+    el('homeBtn').addEventListener('click', () => {
+      console.log('student home button clicked');
+      location.href = '/student/dashboard';
+    });
+    el('profileBtn').addEventListener('click', () => {
+      console.log('student profile button clicked');
+      location.href = '/student/profile';
+    });
+    el('languageBtn').addEventListener('click', () => {
+      console.log('student language button clicked');
+      goOnline().then(() => toast('Language preferences updated.')).catch((e) => show(e.message || String(e)));
+    });
+    el('incomingBtn').addEventListener('click', async () => {
+      setBusy(el('incomingBtn'), true, 'Loading...', 'Session Requests');
+      try { await loadIncoming(); } catch (e) { show(e.message || String(e)); } finally { setBusy(el('incomingBtn'), false, 'Loading...', 'Session Requests'); }
+    });
+    el('answerBtn').addEventListener('click', async () => {
+      setBusy(el('answerBtn'), true, 'Accepting...', 'Accept');
+      try { await acceptRequest(); } catch (e) { show(e.message || String(e)); } finally { setBusy(el('answerBtn'), false, 'Accepting...', 'Accept'); }
+    });
+    el('rejectBtn').addEventListener('click', async () => {
+      setBusy(el('rejectBtn'), true, 'Rejecting...', 'Reject');
+      try { await rejectRequest(); } catch (e) { show(e.message || String(e)); } finally { setBusy(el('rejectBtn'), false, 'Rejecting...', 'Reject'); }
+    });
+    el('sendBtn').addEventListener('click', async () => {
+      setBusy(el('sendBtn'), true, 'Sending...', 'Send');
+      try { await sendChat(); } catch (e) { show(e.message || String(e)); } finally { setBusy(el('sendBtn'), false, 'Sending...', 'Send'); }
+    });
+    el('voiceBtn').addEventListener('click', () => captureVoiceChat().catch((e) => {
+      try { voiceChatState.recording = false; setVoiceChatUi(false); } catch {}
+      show(e.message || String(e));
+    }));
+    el('chatInput').addEventListener('input', () => {
+      const enabled = !!el('chatInput').value.trim() && !!currentSessionId && sessionPhase === 'active';
+      el('sendBtn').disabled = !enabled;
+    });
+    el('chatInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (el('sendBtn').disabled) return;
+        sendChat().catch((err) => show(err.message || String(err)));
+      }
+    });
+    el('ratingsBtn').addEventListener('click', () => {
+      console.log('student ratings button clicked');
+      location.href = '/student/ratings';
+    });
+    el('openVideoBtn').addEventListener('click', () => openVideo().catch((e) => show(e.message || String(e))));
+    el('endBtn').addEventListener('click', () => endSession().catch((e) => show(e.message || String(e))));
+    el('saveProfileBtn').addEventListener('click', async () => {
+      setBusy(el('saveProfileBtn'), true, 'Saving...', 'Save Profile');
+      try { await saveProfile(); } catch (e) { show(e.message || String(e)); } finally { setBusy(el('saveProfileBtn'), false, 'Saving...', 'Save Profile'); }
+    });
+    el('closeProfileBtn').addEventListener('click', () => { el('profileModal').style.display = 'none'; });
+    el('trendDays').addEventListener('change', () => loadAnalytics().catch((e) => show(e.message || String(e))));
+    el('multiBtn').addEventListener('click', () => {
+      chartMode = 'multi';
+      el('multiBtn').classList.add('active');
+      el('singleBtn').classList.remove('active');
+      renderTrendChart();
+    });
+    el('singleBtn').addEventListener('click', () => {
+      chartMode = 'single';
+      el('singleBtn').classList.add('active');
+      el('multiBtn').classList.remove('active');
+      renderTrendChart();
+    });
+    el('singleSeriesSelect').addEventListener('change', renderTrendChart);
+    el('aiInsightBtn').addEventListener('click', () => generateAiInsight().catch((e) => show(e.message || String(e))));
+
+    el('logoutBtn').addEventListener('click', () => {
+      console.log('student logout button clicked');
+      ['student_id', 'student_token', 'student_language', 'session_id', 'session_mode'].forEach((k) => localStorage.removeItem(k));
+      location.href = '/select-role';
+    });
+
+    if (!studentId) {
+      show('Student session missing. Please login first.');
+      setTimeout(() => { location.href = '/student/login'; }, 900);
+    } else {
+      el('studentName').textContent = 'Consultant ' + studentId;
+      setActionState(currentSessionId ? sessionPhase : 'none');
+      el('sendBtn').disabled = true;
+      localStorage.setItem('active_role', 'student');
+      loadProfile().catch(() => null);
+      goOnline().catch(() => null);
+      loadRatings();
+      loadIncoming().catch(() => null);
+      loadAnalytics().catch(() => null);
+      setInterval(() => loadIncoming().catch(() => null), 20000);
+
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      let notifyWs;
+      const connectNotify = () => {
+        const tokenQ = encodeURIComponent(studentToken || '');
+        notifyWs = new WebSocket(`${proto}://${location.host}/ws/notifications/student/${encodeURIComponent(studentId)}?token=${tokenQ}`);
+        notifyWs.onmessage = (evt) => {
+          try {
+            const payload = JSON.parse(evt.data);
+            if (payload.message) {
+              toast(payload.message);
+              console.log('student notification', payload);
+              const title = String(payload.title || '').toLowerCase();
+              if (payload.type === 'session_update' && title.includes('session ended')) {
+                currentSessionId = '';
+                pendingRequest = null;
+                sessionPhase = 'none';
+                localStorage.removeItem('session_id');
+                localStorage.removeItem('session_mode');
+                setSessionLabel();
+                setActionState(sessionPhase);
+                el('chatBody').innerHTML = '<div class="bubble patient">Session ended. Waiting for next consultation.</div>';
+                return;
+              }
+              if (payload.session_id) {
+                currentSessionId = payload.session_id;
+                localStorage.setItem('session_id', currentSessionId);
+                if (payload.mode) localStorage.setItem('session_mode', String(payload.mode).toLowerCase());
+                if (payload.type === 'incoming_request' || payload.type === 'session_request') sessionPhase = 'pending';
+                if (payload.type === 'session_update' && title.includes('accepted')) sessionPhase = 'active';
+                setSessionLabel();
+                loadIncoming().catch(() => null);
+                connectSessionWs();
+                loadAnalytics().catch(() => null);
+              }
+            }
+          } catch {}
+        };
+        notifyWs.onclose = () => setTimeout(connectNotify, 1500);
+      };
+      connectNotify();
+    }
+  </script>
+</body>
+</html>

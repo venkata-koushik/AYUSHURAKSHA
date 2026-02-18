@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AYUSH Healthcare Ecosystem</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="bg-shape bg-1"></div>
+  <div class="bg-shape bg-2"></div>
+  <main class="layout">
+    <header class="topbar">
+      <h1>AI-Integrated AYUSH Healthcare Ecosystem</h1>
+      <p>Mock frontend wired to backend APIs. Open browser console to verify action logs.</p>
+    </header>
+
+    <section class="card">
+      <h2>Role Selection</h2>
+      <div class="btn-row">
+        <button id="rolePatient">Patient</button>
+        <button id="roleDoctor">Doctor</button>
+        <button id="roleStudent">Senior Medical Student</button>
+      </div>
+    </section>
+
+    <section id="patientSection" class="card hidden">
+      <h2>Patient Mobile Application</h2>
+      <div class="grid2">
+        <div>
+          <h3>Register Patient (OTP: 123456)</h3>
+          <input id="p_aadhaar" placeholder="Aadhaar (12 digits)" />
+          <input id="p_phone" placeholder="Phone" />
+          <input id="p_otp" placeholder="OTP" />
+          <input id="p_name" placeholder="Full Name" />
+          <input id="p_age" placeholder="Age" type="number" />
+          <input id="p_gender" placeholder="Gender" />
+          <input id="p_blood" placeholder="Blood Group" />
+          <input id="p_allergies" placeholder="Allergies comma-separated" />
+          <input id="p_chronic" placeholder="Chronic Conditions comma-separated" />
+          <input id="p_address" placeholder="Address" />
+          <input id="p_lat" placeholder="Latitude" type="number" step="any" />
+          <input id="p_lng" placeholder="Longitude" type="number" step="any" />
+          <button id="pRegister">Register Patient</button>
+        </div>
+        <div>
+          <h3>Patient Login (Phone + OTP)</h3>
+          <input id="p_login_phone" placeholder="Phone" />
+          <input id="p_login_otp" placeholder="OTP" />
+          <button id="pLogin">Login Patient</button>
+          <p id="pIdentity" class="meta"></p>
+        </div>
+      </div>
+      <h3>Dashboard Buttons</h3>
+      <div class="btn-row wrap">
+        <button id="pDashboard">Patient Dashboard</button>
+        <button id="pHealthQr">My Health QR</button>
+        <button id="pAssistant">AI Health Assistant</button>
+        <button id="pReports">My Medical Reports</button>
+        <button id="pTimeline">Health History Timeline</button>
+        <button id="pBook">Book Consultation (Senior Medical Student)</button>
+        <button id="pProfile">Profile &amp; Settings</button>
+        <button id="pNotifications">Notifications</button>
+        <button id="pLogout">Logout</button>
+      </div>
+      <div class="grid2">
+        <input id="pAssistantQuestion" placeholder="Ask health question..." />
+        <div class="grid2">
+          <input id="pBookLanguage" placeholder="Language (e.g. Telugu)" />
+          <input id="pBookProblem" placeholder="Problem summary" />
+        </div>
+      </div>
+      <div id="patientOutput" class="output"></div>
+    </section>
+
+    <section id="doctorSection" class="card hidden">
+      <h2>Doctor Web Interface</h2>
+      <div class="grid2">
+        <div>
+          <h3>Doctor Registration</h3>
+          <input id="d_license" placeholder="Government License ID" />
+          <input id="d_name" placeholder="Full Name" />
+          <input id="d_age" placeholder="Age" type="number" />
+          <input id="d_user" placeholder="Username" />
+          <input id="d_pass" placeholder="Password" type="password" />
+          <input id="d_cpass" placeholder="Confirm Password" type="password" />
+          <button id="dRegister">Register Doctor</button>
+        </div>
+        <div>
+          <h3>Doctor Login</h3>
+          <input id="d_login_user" placeholder="Username" />
+          <input id="d_login_pass" placeholder="Password" type="password" />
+          <button id="dLogin">Login Doctor</button>
+          <p id="dIdentity" class="meta"></p>
+        </div>
+      </div>
+      <h3>Doctor Dashboard + Consultation Buttons</h3>
+      <div class="btn-row wrap">
+        <button id="dDashboard">Doctor Dashboard</button>
+        <button id="dScan">Scan Patient QR</button>
+        <button id="dVoice">Start Voice Dictation</button>
+        <button id="dMic">Mic Status Check</button>
+        <button id="dEdit">Edit Report (Same day only)</button>
+        <button id="dAttach">Attach Manual Notes</button>
+        <button id="dApprove">Approve &amp; Save</button>
+        <button id="dSubmit">Submit</button>
+        <button id="dLogout">Logout</button>
+      </div>
+      <div class="grid2">
+        <input id="d_uhid" placeholder="Patient UHID for scan/report" />
+        <input id="d_visit_id" placeholder="Visit ID for edit" />
+      </div>
+      <textarea id="d_voice_text" rows="3" placeholder="Consultation voice/manual text"></textarea>
+      <textarea id="d_notes" rows="2" placeholder="Attach manual notes"></textarea>
+      <div id="doctorOutput" class="output"></div>
+    </section>
+
+    <section id="studentSection" class="card hidden">
+      <h2>Senior Medical Student Portal</h2>
+      <div class="grid2">
+        <div>
+          <h3>Student Registration (OTP: 123456)</h3>
+          <input id="s_college" placeholder="College ID" />
+          <input id="s_email" placeholder="Institutional Email" />
+          <input id="s_otp" placeholder="OTP" />
+          <input id="s_pass" placeholder="Password" type="password" />
+          <button id="sRegister">Register Student</button>
+        </div>
+        <div>
+          <h3>Student Login</h3>
+          <input id="s_login_email" placeholder="Email" />
+          <input id="s_login_pass" placeholder="Password" type="password" />
+          <button id="sLogin">Login Student</button>
+          <p id="sIdentity" class="meta"></p>
+        </div>
+      </div>
+      <div class="grid2">
+        <input id="s_language" placeholder="Preferred language" />
+        <button id="sGoOnline">Go Online</button>
+      </div>
+      <h3>Student Dashboard Buttons</h3>
+      <div class="btn-row wrap">
+        <button id="sDashboard">Dashboard</button>
+        <button id="sIncoming">Incoming Requests (Accept/Reject)</button>
+        <button id="sPast">Past Sessions</button>
+        <button id="sRatings">Ratings</button>
+        <button id="sNotifications">Notifications</button>
+        <button id="sAccept">Accept Session</button>
+        <button id="sReject">Reject Session</button>
+        <button id="sEnd">End Session</button>
+        <button id="sLogout">Logout</button>
+      </div>
+      <div class="grid2">
+        <input id="s_session_id" placeholder="Session ID for decision/end" />
+        <input id="s_chat" placeholder="Real-time chat placeholder message" />
+      </div>
+      <button id="sSendChat">Send Chat (Placeholder)</button>
+      <div id="studentOutput" class="output"></div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patient Registration</title>
+  <style>
+    :root {
+      --blue-700: #1E5DA8;
+      --blue-500: #2D7BE5;
+      --line: #d3dbe8;
+      --surface: #ffffff;
+      --input-bg: #ffffff;
+      --bg: #F4F7FB;
+      --ok: #28C76F;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Poppins", "Inter", "Segoe UI", sans-serif;
+      background: linear-gradient(145deg, #ecf3ff, var(--bg));
+      color: #1c2a3a;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(120deg, var(--blue-700), var(--blue-500));
+      color: #fff;
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: 32px 1fr 32px;
+      align-items: center;
+      box-shadow: 0 10px 24px rgba(30, 93, 168, 0.26);
+    }
+    .header h1 {
+      margin: 0;
+      text-align: center;
+      font-size: 1.08rem;
+    }
+    .back {
+      width: 32px;
+      height: 32px;
+      border: 0;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .page {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .form-wrap {
+      width: 90%;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid #e3e9f3;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 16px 30px rgba(33, 76, 138, 0.12);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .field.required label::after {
+      content: " *";
+      color: #d83a52;
+    }
+    label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #2c4460;
+    }
+    input, select {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      background: var(--input-bg);
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+    .otp-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+    .verify-btn, .send-btn, .submit-btn, .next-btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .send-btn, .verify-btn {
+      background: #1e5da8;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .submit-btn {
+      background: linear-gradient(120deg, #1E5DA8, #2D7BE5);
+      color: #fff;
+      font-size: 1rem;
+      margin-top: 2px;
+    }
+    .next-btn {
+      background: var(--ok);
+      color: #fff;
+      display: none;
+    }
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .actions-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .clear-btn {
+      border: 1px solid #b9cbe5;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      background: #fff;
+      color: #1f4c86;
+    }
+    .qr-block {
+      background: #E8F2FF;
+      border: 1px dashed #9cc0f4;
+      border-radius: 14px;
+      padding: 14px;
+      text-align: center;
+      display: none;
+    }
+    .qr-ill {
+      width: 70px;
+      height: 70px;
+      margin: 0 auto 10px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: #d7e9ff;
+      color: #1f4d88;
+      font-size: 1.6rem;
+    }
+    .qr-img {
+      width: min(220px, 100%);
+      border-radius: 10px;
+      border: 1px solid #b8d4fa;
+      margin: 8px auto 0;
+      display: none;
+      background: #fff;
+    }
+    .status {
+      white-space: pre-wrap;
+      background: #f8fbff;
+      border: 1px dashed #c7d8ee;
+      border-radius: 10px;
+      padding: 10px;
+      min-height: 48px;
+      margin: 0;
+      font-size: 0.84rem;
+      color: #334b67;
+    }
+    .small {
+      margin: 0;
+      font-size: 0.8rem;
+      color: #5e7590;
+    }
+    @media (max-width: 740px) {
+      .form-wrap { width: 100%; }
+      .row-2 { grid-template-columns: 1fr; }
+      .otp-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <button class="back" type="button" onclick="location.href='/select-role'">&#8592;</button>
+    <h1>Patient Registration</h1>
+    <div></div>
+  </header>
+
+  <main class="page">
+    <section class="form-wrap">
+      <div class="field required">
+        <label for="fullName">Full Name</label>
+        <input id="fullName" placeholder="Enter full name" />
+      </div>
+
+      <div class="row-2">
+        <div class="field required">
+          <label for="aadhaar">Aadhaar Number</label>
+          <input id="aadhaar" placeholder="12 digit Aadhaar" maxlength="12" />
+        </div>
+        <div class="field">
+          <label for="pan">PAN Number</label>
+          <input id="pan" placeholder="PAN Number" />
+        </div>
+      </div>
+
+      <div class="row-2">
+        <div class="field required">
+          <label for="phone">Phone Number</label>
+          <input id="phone" placeholder="Phone number" />
+        </div>
+        <div class="field required">
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="Email" />
+        </div>
+      </div>
+
+      <div class="row-2">
+        <div class="field required">
+          <label for="dob">Date of Birth</label>
+          <input id="dob" type="date" />
+        </div>
+        <div class="field required">
+          <label for="bloodGroup">Blood Group</label>
+          <input id="bloodGroup" placeholder="B+, O-, etc." />
+        </div>
+      </div>
+
+      <div class="row-2">
+        <div class="field">
+          <label for="allergies">Allergies</label>
+          <input id="allergies" placeholder="Comma separated" />
+        </div>
+        <div class="field">
+          <label for="chronic">Chronic Conditions</label>
+          <input id="chronic" placeholder="Comma separated" />
+        </div>
+      </div>
+
+      <div class="field required">
+        <label for="address">Residential Address (District, State)</label>
+        <input id="address" placeholder="e.g. Lucknow, Uttar Pradesh" />
+      </div>
+
+      <div class="row-2">
+        <div class="field">
+          <label for="language">Preferred Language</label>
+          <select id="language">
+            <option>English</option>
+            <option>Hindi</option>
+            <option>Tamil</option>
+            <option>Telugu</option>
+            <option>Kannada</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="liveLocation">Enable Live GPS Location</label>
+          <select id="liveLocation">
+            <option value="false" selected>No</option>
+            <option value="true">Yes</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row-2">
+        <div class="field required">
+          <label for="password">Password</label>
+          <input id="password" type="password" placeholder="Password" />
+        </div>
+        <div class="field required">
+          <label for="confirmPassword">Confirm Password</label>
+          <input id="confirmPassword" type="password" placeholder="Confirm password" />
+        </div>
+      </div>
+
+      <div class="field required">
+        <label for="otp">OTP</label>
+        <input id="otp" placeholder="Enter OTP" />
+      </div>
+
+      <p class="small">Send OTP to your registered email/phone and verify before registration.</p>
+      <div class="actions-row">
+        <button id="sendOtpBtn" class="send-btn" type="button">Send OTP</button>
+        <button id="registerBtn" class="submit-btn" type="button">Register Patient</button>
+        <button id="clearBtn" class="clear-btn" type="button">Clear Form</button>
+        <button id="toLoginBtn" class="clear-btn" type="button">Go to Login</button>
+      </div>
+
+      <section id="qrBlock" class="qr-block">
+        <div class="qr-ill">&#128273;</div>
+        <strong>Your Unique Health QR Generated!</strong>
+        <img id="qrImage" class="qr-img" alt="Health QR" />
+      </section>
+
+      <button id="goDashboardBtn" class="next-btn" type="button">Continue to Login</button>
+      <p class="small">Already registered? <a href="/patient/login">Login here</a></p>
+      <pre id="status" class="status"></pre>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const status = $('status');
+    const state = { patientId: '', uhid: '', otpIdentifier: '', otpChannel: 'email' };
+
+    function show(message) {
+      status.textContent = typeof message === 'string' ? message : JSON.stringify(message, null, 2);
+    }
+
+    async function parse(res) {
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { detail: txt || ('HTTP ' + res.status) }; }
+      if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : (txt || ('HTTP ' + res.status)));
+      return data;
+    }
+
+    function required(values) {
+      return values.every((v) => String(v || '').trim());
+    }
+
+    async function requestJson(url, options) {
+      const res = await fetch(url, {
+        cache: 'no-store',
+        credentials: 'same-origin',
+        ...options,
+      });
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { detail: txt || ('HTTP ' + res.status) }; }
+      if (!res.ok) {
+        const err = new Error(typeof data.detail === 'string' ? data.detail : (txt || ('HTTP ' + res.status)));
+        err.status = res.status;
+        err.payload = data;
+        throw err;
+      }
+      return data;
+    }
+
+    async function sendOtpRobust(identifier, channel) {
+      const candidates = [
+        () => requestJson('/api/send-registration-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier, channel }),
+        }),
+        () => requestJson('/api/send-registration-otp?identifier=' + encodeURIComponent(identifier) + '&channel=' + encodeURIComponent(channel), {
+          method: 'GET',
+        }),
+        () => requestJson('/send-registration-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier, channel }),
+        }),
+        () => requestJson('/send-registration-otp?identifier=' + encodeURIComponent(identifier) + '&channel=' + encodeURIComponent(channel), {
+          method: 'GET',
+        }),
+      ];
+      let lastErr = null;
+      for (const call of candidates) {
+        try { return await call(); } catch (err) { lastErr = err; }
+      }
+      throw lastErr || new Error('Unable to send OTP.');
+    }
+
+    async function verifyOtpRobust(identifier, otp, channel) {
+      const candidates = [
+        () => requestJson('/api/verify-registration-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier, otp, channel }),
+        }),
+        () => requestJson('/api/verify-registration-otp?identifier=' + encodeURIComponent(identifier) + '&otp=' + encodeURIComponent(otp) + '&channel=' + encodeURIComponent(channel), {
+          method: 'GET',
+        }),
+        () => requestJson('/verify-registration-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier, otp, channel }),
+        }),
+        () => requestJson('/verify-registration-otp?identifier=' + encodeURIComponent(identifier) + '&otp=' + encodeURIComponent(otp) + '&channel=' + encodeURIComponent(channel), {
+          method: 'GET',
+        }),
+      ];
+      let lastErr = null;
+      for (const call of candidates) {
+        try { return await call(); } catch (err) { lastErr = err; }
+      }
+      throw lastErr || new Error('Unable to verify OTP.');
+    }
+
+    $('sendOtpBtn').addEventListener('click', async () => {
+      try {
+        const email = $('email').value.trim();
+        const identifier = email;
+        const channel = 'email';
+        if (!identifier) throw new Error('Enter email first.');
+        const result = await sendOtpRobust(identifier, channel);
+        state.otpIdentifier = identifier;
+        state.otpChannel = channel;
+        if (result.otp_debug) show({ status: 'otp_sent', channel, expires_at: result.expires_at, otp_debug: result.otp_debug });
+        else show({ status: 'otp_sent', channel, expires_at: result.expires_at });
+      } catch (err) {
+        show((err && err.status ? ('HTTP ' + err.status + ': ') : '') + (err.message || String(err)));
+      }
+    });
+
+    $('registerBtn').addEventListener('click', async () => {
+      try {
+        const payload = {
+          full_name: $('fullName').value.trim(),
+          aadhaar: $('aadhaar').value.trim(),
+          dob: $('dob').value,
+          email: $('email').value.trim(),
+          phone: $('phone').value.trim(),
+          language: $('language').value,
+          otp: $('otp').value.trim(),
+          address: $('address').value.trim(),
+          blood_group: $('bloodGroup').value.trim(),
+          live_location_enabled: $('liveLocation').value === 'true',
+          latitude: 0,
+          longitude: 0,
+          password: $('password').value,
+          confirm_password: $('confirmPassword').value,
+        };
+
+        if (!required([
+          payload.full_name,
+          payload.aadhaar,
+          payload.dob,
+          payload.email,
+          payload.phone,
+          payload.address,
+          payload.blood_group,
+          payload.password,
+          payload.confirm_password,
+        ])) {
+          throw new Error('Please fill all required fields.');
+        }
+        if (payload.password !== payload.confirm_password) throw new Error('Password mismatch.');
+        if (!payload.otp) throw new Error('OTP required.');
+
+        const res = await fetch('/api/patient/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await parse(res);
+
+        state.patientId = data.patient_id;
+        state.uhid = data.uhid;
+
+        localStorage.setItem('patient_id', data.patient_id || '');
+        localStorage.setItem('patient_uhid', data.uhid || '');
+        localStorage.setItem('patient_name', payload.full_name);
+        localStorage.setItem('patient_blood_group', payload.blood_group);
+        localStorage.setItem('patient_pan', $('pan').value.trim());
+        localStorage.setItem('patient_allergies', $('allergies').value.trim());
+        localStorage.setItem('patient_chronic', $('chronic').value.trim());
+
+        $('qrBlock').style.display = 'block';
+        if (data.patient_id) {
+          const qrImage = $('qrImage');
+          qrImage.src = '/api/patient/qr?patient_id=' + encodeURIComponent(data.patient_id) + '&t=' + Date.now();
+          qrImage.style.display = 'block';
+        }
+
+        $('goDashboardBtn').style.display = 'block';
+        show({ success: true, patient_id: data.patient_id, uhid: data.uhid, otp_mode: 'verified' });
+        console.log('patient register working', { patient_id: data.patient_id, uhid: data.uhid });
+      } catch (err) {
+        show(err.message || String(err));
+      }
+    });
+
+    $('goDashboardBtn').addEventListener('click', () => {
+      console.log('patient register continue to login');
+      location.href = '/patient/login';
+    });
+
+    $('toLoginBtn').addEventListener('click', () => {
+      location.href = '/patient/login';
+    });
+
+    $('clearBtn').addEventListener('click', () => {
+      ['fullName','aadhaar','pan','phone','email','otp','dob','bloodGroup','allergies','chronic','address','password','confirmPassword']
+        .forEach((id) => { if ($(id)) $(id).value = ''; });
+      $('language').value = 'English';
+      $('liveLocation').value = 'false';
+      show('Form cleared.');
+    });
+
+    document.querySelectorAll('input').forEach((inp) => {
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') $('registerBtn').click();
+      });
+    });
+  </script>
+</body>
+</html>

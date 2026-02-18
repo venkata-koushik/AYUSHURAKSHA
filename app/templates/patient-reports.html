@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Medical Reports</title>
+  <style>
+    body { margin: 0; font-family: "Poppins", "Inter", sans-serif; background: #f4f7fb; color: #183452; }
+    .page { max-width: 1240px; margin: 0 auto; padding: 20px; }
+    .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .back { border: 0; border-radius: 10px; padding: 10px 12px; background: #fff; cursor: pointer; }
+    .card { background: #fff; border-radius: 16px; padding: 18px; box-shadow: 0 8px 20px rgba(17,56,97,0.09); }
+    .report { border: 1px solid #dce8f6; border-radius: 14px; padding: 16px; margin-bottom: 12px; background:#fbfdff; }
+    .report.focus { border-color: #2D7BE5; box-shadow: 0 0 0 2px rgba(45,123,229,0.18); }
+    .report h4 { margin: 0 0 8px; font-size: 1rem; }
+    .report p { margin: 5px 0; color: #395777; font-size: 0.95rem; }
+    .report-top { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px; padding:10px; border-radius:10px; background:#eef5ff; border:1px solid #d9e8ff; }
+    .tag { display:inline-block; padding:6px 10px; border-radius:999px; font-size:12px; font-weight:700; background:#dcebff; color:#214a83; }
+    .empty { color: #496888; }
+    .upload { border: 1px solid #dce8f6; border-radius: 12px; padding: 12px; margin-bottom: 10px; background: #fbfdff; }
+    .upload a { color: #1b4f90; font-weight: 700; text-decoration: none; }
+    .manual-btn { border:1px solid #c9ddfa; background:#eef5ff; color:#1b4f90; border-radius:10px; padding:7px 10px; font-weight:700; cursor:pointer; }
+    .manual-wrap { margin-top:8px; display:none; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="top">
+      <button class="back" type="button" onclick="location.href='/patient/dashboard'">&#8592; Back</button>
+      <strong>My Medical Reports</strong>
+    </div>
+    <section class="card" id="content"></section>
+  </main>
+
+  <script>
+    const uhid = localStorage.getItem('patient_uhid');
+    const focusVisitId = localStorage.getItem('focus_visit_id') || '';
+    const content = document.getElementById('content');
+
+    async function parse(res) {
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { detail: txt || ('HTTP ' + res.status) }; }
+      if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : (txt || ('HTTP ' + res.status)));
+      return data;
+    }
+
+    async function load() {
+      if (!uhid) {
+        content.innerHTML = '<p class="empty">No UHID found. Please login again.</p>';
+        return;
+      }
+      const data = await parse(await fetch('/api/patient_history/' + encodeURIComponent(uhid)));
+      const patientId = localStorage.getItem('patient_id') || '';
+      const uploaded = patientId
+        ? await parse(await fetch('/api/patient/uploaded-reports?patient_id=' + encodeURIComponent(patientId)))
+        : { reports: [] };
+      const history = data.history || [];
+      const uploadedRows = uploaded.reports || [];
+      let html = '<article class="upload"><strong>External Hospital Reports</strong> - <a href="/patient/upload-report">Upload New</a>';
+      if (!uploadedRows.length) {
+        html += '<p class="empty">No uploaded external documents.</p></article>';
+      } else {
+        html += uploadedRows.slice().reverse().map((r) => {
+          return '<p><a target="_blank" href="/api/patient/uploaded-report-file/'
+            + encodeURIComponent(patientId) + '/' + encodeURIComponent(r.file_name) + '">'
+            + (r.original_name || r.file_name) + '</a> - ' + (r.hospital_name || '-') + '</p>';
+        }).join('') + '</article>';
+      }
+      if (!history.length) {
+        content.innerHTML = html + '<p class="empty">No doctor-generated reports found yet.</p>';
+        return;
+      }
+      const extractDoctorName = (notes) => {
+        const text = String(notes || '');
+        const m = text.match(/Doctor Name:\s*(.+)/i);
+        return m ? m[1].trim() : '';
+      };
+      content.innerHTML = html + history.map((item) => {
+        const v = item.visit || {};
+        const dx = (item.diagnosis || []).map((d) => d.disease_name || ('Category ' + d.disease_category)).join(', ') || '-';
+        const rec = (item.recommendations || []).map((r) => r.advice_text).join(' | ') || '-';
+        const manual = (item.manual_reports || []);
+        const manualId = 'manual-' + (v.visit_id || '');
+        const manualHtml = manual.length
+          ? '<div><button type="button" class="manual-btn" data-manual-toggle="' + manualId + '">Manual Report</button></div>'
+            + '<div id="' + manualId + '" class="manual-wrap"><p><strong>Doctor Manual Report Photo:</strong></p><div style="display:grid;gap:10px;">'
+            + manual.map((m) => '<a target="_blank" href="' + (m.file_url || '#') + '" style="font-weight:700;color:#1b4f90;">Open ' + (m.original_name || m.file_name || 'Manual Report') + '</a>'
+              + '<img src="' + (m.file_url || '') + '" alt="Manual Report" style="width:100%;max-width:980px;border-radius:12px;border:1px solid #dce8f6;" />')
+              .join('')
+            + '</div></div>'
+          : '<p><strong>Doctor Manual Report Photo:</strong> -</p>';
+        const focus = focusVisitId && v.visit_id === focusVisitId ? ' focus' : '';
+        const doctorName = extractDoctorName(v.notes) || '-';
+        return '<article class="report' + focus + '" id="visit-' + (v.visit_id || '') + '">'
+          + '<div class="report-top"><div><span class="tag">Doctor: ' + doctorName + '</span></div><div><span class="tag">Diagnosis: ' + dx + '</span></div></div>'
+          + '<h4>' + (v.visit_date || '').slice(0, 10) + ' - Visit ' + (v.visit_id || '') + '</h4>'
+          + '<p><strong>Doctor ID:</strong> ' + (v.doctor_id || '-') + '</p>'
+          + '<p><strong>Consultation Type:</strong> ' + (v.consultation_type || '-') + '</p>'
+          + '<p><strong>Diagnosis:</strong> ' + dx + '</p>'
+          + '<p><strong>Recommendations:</strong> ' + rec + '</p>'
+          + manualHtml
+          + '<p><strong>Full Clinical Notes:</strong><br>' + String(v.notes || '-').replace(/\n/g, '<br>') + '</p>'
+          + '</article>';
+      }).join('');
+      if (focusVisitId) {
+        const focused = document.getElementById('visit-' + focusVisitId);
+        if (focused) focused.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        localStorage.removeItem('focus_visit_id');
+      }
+      Array.from(document.querySelectorAll('[data-manual-toggle]')).forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-manual-toggle');
+          const box = id ? document.getElementById(id) : null;
+          if (!box) return;
+          const open = box.style.display === 'block';
+          box.style.display = open ? 'none' : 'block';
+          btn.textContent = open ? 'Manual Report' : 'Hide Manual Report';
+        });
+      });
+    }
+
+    load().catch((e) => {
+      content.innerHTML = '<p class="empty">' + (e.message || String(e)) + '</p>';
+    });
+  </script>
+</body>
+</html>
+
+

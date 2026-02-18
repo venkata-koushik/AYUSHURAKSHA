@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consultation Chat</title>
+  <style>
+    body{margin:0;font-family:Segoe UI,Tahoma,sans-serif;background:#eef2f8}
+    body.role-patient{background:#edf5ff}
+    body.role-student{background:#fff4eb}
+    .wrap{max-width:1200px;margin:0 auto;padding:14px;height:100vh;display:grid;grid-template-columns:1fr 320px;gap:12px}
+    .left{display:flex;flex-direction:column}
+    .top{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:#fff;border:1px solid #d7e0f2}
+    body.role-student .top{border-color:#ffd9b8;background:#fff8f1}
+    .back{padding:8px 10px;border-radius:10px;background:#edf2ff;text-decoration:none;color:#2d3f78}
+    .chat{flex:1;margin-top:10px;border-radius:12px;background:#fff;border:1px solid #d7e0f2;padding:12px;overflow:auto}
+    body.role-student .chat{border-color:#ffd9b8}
+    .msg{max-width:78%;padding:10px 12px;border-radius:12px;margin-bottom:8px;line-height:1.35}
+    .me{margin-left:auto;background:#d8e7ff}
+    body.role-student .me{background:#ffe6cf}
+    .other{background:#eef2f7}
+    body.role-student .other{background:#fff6ec}
+    .send{display:grid;grid-template-columns:1fr auto auto;gap:10px;margin-top:10px}
+    input{padding:12px;border-radius:12px;border:1px solid #ccd7ee}
+    button{padding:12px 16px;border-radius:12px;border:none;background:#3a5aca;color:#fff;cursor:pointer}
+    body.role-student button{background:#d97706}
+    .voice{background:#2f855a}
+    .voice.recording{background:#c53030}
+    .end{background:#d63b3b}
+    .right{background:#fff;border:1px solid #d7e0f2;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+    .status{white-space:pre-wrap;font-size:12px;background:#f8fbff;border:1px dashed #c8d6ef;border-radius:10px;padding:10px;min-height:64px}
+    .rating{display:none;border:1px solid #d7e0f2;border-radius:10px;padding:10px;background:#fbfdff}
+    .rating input,.rating textarea{width:100%;margin-top:8px;padding:10px;border:1px solid #ccd7ee;border-radius:8px}
+    .rating button{margin-top:8px;width:100%}
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef5ff;color:#244889;font-weight:700;font-size:12px}
+    .typing{display:none;font-size:12px;color:#4b5f87}
+    .toast{position:fixed;right:14px;bottom:14px;background:#1f2937;color:#fff;padding:10px 12px;border-radius:10px;box-shadow:0 10px 25px #0003;display:none;max-width:320px}
+    @media(max-width:1000px){.wrap{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="left">
+      <div class="top">
+        <a class="back" id="backLink" href="/select-role">Back</a>
+        <strong>Consultation Chat</strong>
+        <span class="badge" id="sessionBadge">Session: -</span>
+      </div>
+      <section id="chat" class="chat">
+        <div class="msg other">Consultation started. You can chat in real time.</div>
+      </section>
+      <div class="send">
+        <input id="text" placeholder="Type a message..." />
+        <button id="voiceBtn" class="voice" type="button">Voice Note</button>
+        <button id="send" type="button">Send</button>
+      </div>
+      <div id="typing" class="typing">Sending/receiving message...</div>
+    </section>
+
+    <aside class="right">
+      <strong>Consultation Panel</strong>
+      <div>Student ID: <span id="studentInfo">-</span></div>
+      <div>Patient ID: <span id="patientInfo">-</span></div>
+      <button id="endBtn" class="end" type="button">End Session</button>
+      <section id="ratingBox" class="rating">
+        <strong>Rate Consultant</strong>
+        <input id="ratingValue" type="number" min="1" max="5" value="5" />
+        <textarea id="ratingFeedback" rows="3" placeholder="Optional feedback"></textarea>
+        <div id="ratingStatus" style="font-size:12px;color:#335277;"></div>
+        <button id="submitRatingBtn" type="button">Submit Rating</button>
+        <button id="ratingBackBtn" type="button" style="display:none;background:#2d4f8a;">Back to Dashboard</button>
+      </section>
+      <pre id="status" class="status"></pre>
+    </aside>
+  </main>
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const sessionId = localStorage.getItem("session_id") || "";
+    const urlRole = (new URLSearchParams(location.search).get("role") || "").toLowerCase();
+    const activeRole = (urlRole === "patient" || urlRole === "student")
+      ? urlRole
+      : (localStorage.getItem("active_role") || (localStorage.getItem("student_id") ? "student" : "patient"));
+    const studentId = localStorage.getItem("student_id") || "";
+    const patientId = localStorage.getItem("patient_id") || "";
+    const senderId = activeRole === "student" ? studentId : patientId;
+    const senderRole = activeRole === "student" ? "student_consultant" : "patient";
+    const authToken = activeRole === "student"
+      ? (localStorage.getItem("student_token") || "")
+      : (localStorage.getItem("patient_token") || "");
+    const notifyUserId = senderId;
+    const notifyRole = activeRole === "student" ? "student" : "patient";
+    const backLink = document.getElementById("backLink");
+    document.body.classList.add(activeRole === "student" ? "role-student" : "role-patient");
+    localStorage.setItem("active_role", activeRole);
+    backLink.href = activeRole === "student" ? "/student/dashboard" : "/patient/language-select";
+    document.getElementById("sessionBadge").textContent = "Session: " + (sessionId || "-");
+    document.getElementById("studentInfo").textContent = studentId || "(assigned after accept)";
+    document.getElementById("patientInfo").textContent = patientId || "-";
+
+    function show(v){ status.textContent = typeof v === "string" ? v : JSON.stringify(v, null, 2); }
+    function showToast(message){
+      const t = document.getElementById("toast");
+      t.textContent = message;
+      t.style.display = "block";
+      setTimeout(() => { t.style.display = "none"; }, 2800);
+    }
+    function safe(v){ return String(v || "").replace(/</g, "&lt;"); }
+    function addMsg(cls, msg){ chat.insertAdjacentHTML("beforeend", `<div class="msg ${cls}">${safe(msg)}</div>`); chat.scrollTop = chat.scrollHeight; }
+    async function parse(res){
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { detail: txt || ("HTTP " + res.status) }; }
+      if(!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : (txt || ("HTTP " + res.status)));
+      return data;
+    }
+
+    let ws = null;
+    let sessionClosed = false;
+    let wsRetry = null;
+    function connectWs(){
+      if(!sessionId) return;
+      const proto = location.protocol === "https:" ? "wss" : "ws";
+      const tokenQ = encodeURIComponent(authToken || "");
+      ws = new WebSocket(`${proto}://${location.host}/ws/chat/${encodeURIComponent(sessionId)}?token=${tokenQ}`);
+      ws.onmessage = (evt) => {
+        try {
+          const payload = JSON.parse(evt.data);
+          if(payload && payload.type === "chat" && payload.text && payload.sender_id !== senderId) addMsg("other", payload.text);
+        } catch {}
+      };
+      ws.onopen = () => show("Realtime chat connected.");
+      ws.onclose = () => {
+        if (sessionClosed) return;
+        show("Realtime socket closed. Reconnecting...");
+        clearTimeout(wsRetry);
+        wsRetry = setTimeout(connectWs, 1200);
+      };
+    }
+    connectWs();
+
+    let notifyWs = null;
+    function closeInteractionUi(){
+      sessionClosed = true;
+      text.disabled = true;
+      send.disabled = true;
+      voiceBtn.disabled = true;
+      endBtn.disabled = true;
+    }
+    function handleSessionEndedExternally(message){
+      if (sessionClosed) return;
+      closeInteractionUi();
+      show(message || "Session ended.");
+      localStorage.removeItem("session_id");
+      if (activeRole !== "student") {
+        ratingBox.style.display = "block";
+      } else {
+        setTimeout(() => { location.href = "/student/dashboard"; }, 600);
+      }
+    }
+    function connectNotifications(){
+      if(!notifyUserId) return;
+      const proto = location.protocol === "https:" ? "wss" : "ws";
+      const tokenQ = encodeURIComponent(authToken || "");
+      notifyWs = new WebSocket(`${proto}://${location.host}/ws/notifications/${encodeURIComponent(notifyRole)}/${encodeURIComponent(notifyUserId)}?token=${tokenQ}`);
+      notifyWs.onmessage = (evt) => {
+        try{
+          const p = JSON.parse(evt.data);
+          if(p.message) showToast(p.message);
+          const t = String(p.title || "").toLowerCase();
+          if (p.type === "session_update" && t.includes("session ended") && p.session_id === sessionId) {
+            handleSessionEndedExternally("Session ended by the other participant.");
+          }
+        }catch{}
+      };
+      notifyWs.onclose = () => { if (!sessionClosed) setTimeout(connectNotifications, 1500); };
+    }
+    connectNotifications();
+
+    async function persistMessage(messageText){
+      if(!sessionId || !senderId) return;
+      return parse(await fetch("/api/chat/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: sessionId,
+          sender_role: senderRole,
+          sender_id: senderId,
+          message_text: messageText,
+        }),
+      }));
+    }
+
+    async function sendMessageFromInput(){
+      const v = text.value.trim();
+      if(!v) return;
+      text.value = "";
+      typing.style.display = "block";
+      addMsg("me", v);
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "chat", text: v, session_id: sessionId, sender_id: senderId }));
+      }
+      try {
+        const d = await persistMessage(v);
+        console.log("chat saved", d);
+      } catch (e) {
+        console.log("chat save failed", e.message || String(e));
+      } finally {
+        typing.style.display = "none";
+      }
+    }
+
+    const voiceState = { recording:false, stream:null, recorder:null, chunks:[], sr:null, srBuffer:"" };
+    function setVoiceUi(on){
+      voiceBtn.classList.toggle("recording", !!on);
+      voiceBtn.style.background = on ? "#c53030" : "#2f855a";
+      voiceBtn.style.color = "#fff";
+      voiceBtn.textContent = on ? "Stop Voice" : "Voice Note";
+    }
+    function preferredSpeechLang(){
+      const raw = (localStorage.getItem("patient_language") || localStorage.getItem("consult_language") || localStorage.getItem("language_preference") || "english").toLowerCase().trim();
+      const map = {
+        english:"en-IN", en:"en-IN",
+        hindi:"hi-IN", hindhi:"hi-IN", hi:"hi-IN",
+        telugu:"te-IN", telgu:"te-IN", te:"te-IN",
+        tamil:"ta-IN", ta:"ta-IN",
+        kannada:"kn-IN", kannda:"kn-IN", kn:"kn-IN",
+        marathi:"mr-IN", marati:"mr-IN", mr:"mr-IN",
+        malayalam:"ml-IN", ml:"ml-IN",
+        gujarati:"gu-IN", gu:"gu-IN",
+        bengali:"bn-IN", bn:"bn-IN",
+        punjabi:"pa-IN", pa:"pa-IN",
+        odia:"or-IN", oriya:"or-IN", or:"or-IN",
+        urdu:"ur-IN", ur:"ur-IN",
+        assamese:"as-IN", as:"as-IN",
+        nepali:"ne-IN", ne:"ne-IN",
+        sanskrit:"sa-IN", sa:"sa-IN"
+      };
+      return map[raw] || "en-IN";
+    }
+    function browserSpeechStart(){
+      return new Promise((resolve, reject) => {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) return reject(new Error("Speech recognition not supported in this browser."));
+        if (voiceState.sr) { try { voiceState.sr.stop(); } catch {} voiceState.sr = null; }
+        voiceState.srBuffer = "";
+        const rec = new SR();
+        rec.lang = preferredSpeechLang();
+        rec.interimResults = true;
+        rec.continuous = true;
+        rec.maxAlternatives = 1;
+        rec.onresult = (e) => {
+          let finalChunk = "";
+          for(let i=e.resultIndex;i<e.results.length;i++){
+            const r = e.results[i];
+            const txt = ((r && r[0] && r[0].transcript) || "").trim();
+            if(!txt) continue;
+            if(r.isFinal) finalChunk += (finalChunk ? " " : "") + txt;
+          }
+          if(finalChunk) voiceState.srBuffer += (voiceState.srBuffer ? " " : "") + finalChunk;
+        };
+        rec.onerror = () => {};
+        rec.onend = () => {
+          if (voiceState.recording && voiceState.sr) {
+            try { rec.start(); } catch {}
+          }
+        };
+        voiceState.sr = rec;
+        try { rec.start(); resolve(); } catch (err) { voiceState.sr = null; reject(err); }
+      });
+    }
+
+    async function transcribeVoiceBlob(blob){
+      const fd = new FormData();
+      fd.append("file", blob, "voice_note.webm");
+      fd.append("language", preferredSpeechLang());
+      let d = null;
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 12000);
+        try { d = await parse(await fetch("/api/transcribe", { method: "POST", body: fd, signal: ctrl.signal })); }
+        finally { clearTimeout(timer); }
+      } catch (err) {
+        throw new Error((err && err.message) ? err.message : "Voice transcription failed.");
+      }
+      if (d.warning) {
+        show(d.warning);
+      }
+      const textMsg = (d.transcript || "").trim();
+      if (!textMsg) {
+        show("No speech detected. Please speak louder and try again.");
+        typing.style.display = "none";
+        return;
+      }
+      addMsg("me", textMsg);
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "chat", text: textMsg, session_id: sessionId, sender_id: senderId }));
+      }
+      await persistMessage(textMsg).catch(() => null);
+      show({ voice_transcribed: textMsg });
+      typing.style.display = "none";
+    }
+
+    async function captureVoiceNote(){
+      if (voiceState.recording) {
+        voiceState.recording = false;
+        setVoiceUi(false);
+        if (voiceState.sr) {
+          const rec = voiceState.sr;
+          voiceState.sr = null;
+          try { rec.onend = null; rec.stop(); } catch {}
+          const transcript = String(voiceState.srBuffer || "").trim();
+          voiceState.srBuffer = "";
+          if (!transcript) {
+            typing.style.display = "none";
+            throw new Error("No speech detected. Please try again.");
+          }
+          addMsg("me", transcript);
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "chat", text: transcript, session_id: sessionId, sender_id: senderId }));
+          }
+          await persistMessage(transcript).catch(() => null);
+          show({ voice_transcribed: transcript });
+          typing.style.display = "none";
+          return;
+        }
+        const rec = voiceState.recorder;
+        const stream = voiceState.stream;
+        voiceState.recorder = null;
+        voiceState.stream = null;
+        if (!rec || !stream) {
+          typing.style.display = "none";
+          throw new Error("Microphone stream unavailable.");
+        }
+        await new Promise((resolve) => {
+          rec.onstop = resolve;
+          try { rec.stop(); } catch { resolve(); }
+        });
+        try { stream.getTracks().forEach((t) => t.stop()); } catch {}
+        const blob = new Blob(voiceState.chunks, { type: "audio/webm" });
+        voiceState.chunks = [];
+        await transcribeVoiceBlob(blob);
+        return;
+      }
+      voiceState.recording = true;
+      setVoiceUi(true);
+      typing.style.display = "block";
+      show("Recording voice note... click Voice button again to stop.");
+      if(!navigator.mediaDevices || !window.MediaRecorder){
+        await browserSpeechStart();
+        return;
+      }
+      voiceState.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      voiceState.chunks = [];
+      const mime = (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) ? "audio/webm;codecs=opus" : "audio/webm";
+      voiceState.recorder = new MediaRecorder(voiceState.stream, { mimeType: mime });
+      voiceState.recorder.ondataavailable = (e) => { if (e.data && e.data.size) voiceState.chunks.push(e.data); };
+      voiceState.recorder.start(1000);
+    }
+
+    async function endSession(){
+      if(!sessionId){
+        location.href = activeRole === "student" ? "/student/dashboard" : "/patient/dashboard";
+        return;
+      }
+      if (sessionClosed) return;
+      await parse(await fetch("/api/session/end", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(authToken ? { Authorization: "Bearer " + authToken } : {}) },
+        body: JSON.stringify({ session_id: sessionId }),
+      }));
+      closeInteractionUi();
+      localStorage.removeItem("session_id");
+      show("Session ended.");
+      if (activeRole !== "student") {
+        ratingBox.style.display = "block";
+      } else {
+        setTimeout(() => { location.href = "/student/dashboard"; }, 500);
+      }
+    }
+
+    async function submitRating(){
+      if (!patientId) return;
+      const rating = Number(ratingValue.value || 0);
+      if (!Number.isFinite(rating) || !Number.isInteger(rating) || rating < 1 || rating > 5) throw new Error("Rating must be an integer from 1 to 5.");
+      const d = await parse(await fetch("/api/session/rating", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(authToken ? { Authorization: "Bearer " + authToken } : {}) },
+        body: JSON.stringify({
+          session_id: sessionId,
+          rating,
+          feedback: ratingFeedback.value || "",
+        }),
+      }));
+      show(d);
+      ratingStatus.textContent = "Rating submitted successfully.";
+      submitRatingBtn.style.display = "none";
+      ratingBackBtn.style.display = "block";
+    }
+
+    send.onclick = () => sendMessageFromInput().catch((e) => show(e.message || String(e)));
+    text.addEventListener("keydown", (e) => { if (e.key === "Enter") sendMessageFromInput().catch((err) => show(err.message || String(err))); });
+    voiceBtn.onclick = () => captureVoiceNote().catch((e) => {
+      try { voiceState.recording = false; setVoiceUi(false); } catch {}
+      typing.style.display = "none";
+      show(e.message || String(e));
+    });
+    endBtn.onclick = () => endSession().catch((e) => show(e.message || String(e)));
+    submitRatingBtn.onclick = () => submitRating().catch((e) => show(e.message || String(e)));
+    ratingBackBtn.onclick = () => { location.replace("/patient/dashboard"); };
+    window.addEventListener("beforeunload", () => {
+      try { if (ws) ws.close(); } catch {}
+      try { if (notifyWs) notifyWs.close(); } catch {}
+    });
+  </script>
+</body>
+</html>

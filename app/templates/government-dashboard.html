@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Government of India - National Digital Health Portal</title>
+  <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="/static/css/government-dashboard.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="emblem">GOI</div>
+      <div>
+        <h1>National Digital Health Portal</h1>
+        <p>Government of India Analytics Dashboard</p>
+      </div>
+    </div>
+    <div class="filters">
+      <button id="govLogoutBtn" type="button">Logout</button>
+      <select id="filterDays">
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+      </select>
+      <select id="filterDisease">
+        <option value="">All Diseases</option>
+        <option value="1">Respiratory</option>
+        <option value="2">Gastrointestinal</option>
+        <option value="3">Musculoskeletal</option>
+        <option value="4">Neurological</option>
+        <option value="5">Dermatological</option>
+        <option value="6">Cardiovascular</option>
+        <option value="7">Endocrine</option>
+        <option value="8">Genitourinary</option>
+        <option value="9">ENT</option>
+        <option value="10">Ophthalmic</option>
+        <option value="11">Mental Health</option>
+        <option value="12">General / Other</option>
+      </select>
+      <select id="filterGender">
+        <option value="">All Gender</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+      </select>
+      <button id="applyFiltersBtn" type="button">Apply</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="card left-panel">
+      <div class="card-head"><h2>India Health Heatmap</h2></div>
+      <div id="map"></div>
+      <div id="mapScaleLegend" style="margin:0 12px 8px;">
+        <div style="font-size:12px;color:#5f7993;margin-bottom:4px;">Patient Density (State-wise)</div>
+        <div style="height:10px;border-radius:999px;background:linear-gradient(90deg,#dfeefc,#165ba8);border:1px solid #c7daf1;"></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#6a829a;margin-top:2px;"><span>Low</span><span>High</span></div>
+      </div>
+      <div class="selected-state">Selected State: <strong id="selectedStateName">-</strong></div>
+      <div class="districts">
+        <h3>District List</h3>
+        <div id="districtList" class="district-list"></div>
+      </div>
+    </section>
+
+    <section class="card center-panel">
+      <div class="card-head"><h2 id="districtTitle">District Analytics</h2></div>
+      <div class="mini-stats">
+        <article><span>Active Patients</span><strong id="districtActivePatients">0</strong></article>
+        <article><span>New Patients</span><strong id="districtNewPatients">0</strong></article>
+      </div>
+      <div class="chart-row">
+        <div class="chart-controls">
+          <div class="disease-selector">
+            <button id="diseaseDropdownBtn" type="button" class="control-btn">Select Diseases</button>
+            <div id="diseaseDropdown" class="disease-dropdown"></div>
+          </div>
+          <div class="chart-toolbar">
+            <button id="multiColorModeBtn" type="button" class="active">Multi-Color</button>
+            <button id="singleColorModeBtn" type="button">Single-Color</button>
+          </div>
+        </div>
+        <div class="trend-canvas-wrap">
+          <canvas id="trendChart"></canvas>
+        </div>
+        <div id="graphLegend" class="graph-legend"></div>
+      </div>
+      <div class="patient-section">
+        <h3>UHID List (Click UHID For Full Report)</h3>
+        <div id="patientList" class="patient-list"></div>
+        <button id="viewAllPatientsBtn" type="button" class="secondary">View All</button>
+      </div>
+    </section>
+
+    <aside class="card right-panel">
+      <div class="card-head"><h2>Visits & Statistics</h2></div>
+      <h3 style="padding:0 12px;margin-top:10px;">Government Alerts</h3>
+      <div id="govAlertsList" class="gov-alerts-list"></div>
+      <div class="summary-grid">
+        <article><span>Active Patients</span><strong id="summaryActive">0</strong></article>
+        <article><span>Discharged</span><strong id="summaryDischarged">0</strong></article>
+        <article><span>Appointments</span><strong id="summaryAppointments">0</strong></article>
+        <article><span>Total Patients</span><strong id="summaryTotal">0</strong></article>
+      </div>
+      <h3>Recent Visits</h3>
+      <div id="visitList" class="visit-list"></div>
+      <div id="reportDetails" class="report-details">Select a visit or click a UHID in the middle panel.</div>
+      <pre id="statusLog" class="status-log"></pre>
+    </aside>
+  </main>
+
+  <script src="/static/vendor/leaflet/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    (function(){
+      const token = localStorage.getItem("government_token") || "";
+      if(!token){ location.href = "/government/login"; return; }
+      window.__GOV_TOKEN__ = token;
+      const btn = document.getElementById("govLogoutBtn");
+      if(btn){
+        btn.onclick = function(){
+          localStorage.removeItem("government_token");
+          localStorage.removeItem("government_user");
+          location.href = "/government/login";
+        };
+      }
+    })();
+  </script>
+  <script src="/static/js/government-dashboard.js?v=20260218a"></script>
+</body>
+</html>

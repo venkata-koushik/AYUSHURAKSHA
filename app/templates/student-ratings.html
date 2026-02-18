@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Ratings</title>
+  <style>
+    :root{--bg:#eef4ff;--card:#fff;--line:#d6e3f7;--txt:#17324f;--mut:#5c7695;--pri:#2563eb}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,Segoe UI,sans-serif;background:var(--bg);color:var(--txt)}
+    .page{max-width:1100px;margin:0 auto;padding:20px}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+    .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 12px;cursor:pointer;font-weight:600}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 10px 22px rgba(20,55,104,.1)}
+    .sum{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+    .chip{background:#f6fbff;border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:13px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #e8f0fb;text-align:left;font-size:13px}
+    .status{margin-top:10px;white-space:pre-wrap;background:#f7fbff;border:1px dashed #c4d7f4;border-radius:10px;padding:10px;min-height:64px}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="top">
+      <button class="btn" id="backBtn">&larr; Dashboard</button>
+      <h2>Ratings History</h2>
+      <button class="btn" id="refreshBtn">Refresh</button>
+    </div>
+    <section class="card">
+      <div class="sum">
+        <div class="chip">Average: <b id="avg">0.0</b></div>
+        <div class="chip">Ratings Count: <b id="count">0</b></div>
+      </div>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>Session</th><th>Patient</th><th>UHID</th><th>Problem</th><th>Rating</th><th>Feedback</th><th>Rated At</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="7">Loading...</td></tr></tbody>
+        </table>
+      </div>
+      <pre id="out" class="status"></pre>
+    </section>
+  </main>
+  <script>
+    const el=(id)=>document.getElementById(id);
+    const studentId=localStorage.getItem('student_id')||'';
+    const show=(v)=>{ out.textContent=typeof v==='string'?v:JSON.stringify(v,null,2); console.log('[student-ratings]',v); };
+    const parse=async(r)=>{const t=await r.text();let d={};try{d=t?JSON.parse(t):{}}catch{d={detail:t||('HTTP '+r.status)}}if(!r.ok)throw new Error(typeof d.detail==='string'?d.detail:(t||('HTTP '+r.status)));return d;};
+    async function load(){
+      if(!studentId) throw new Error('Student login required.');
+      const [summary,history]=await Promise.all([
+        parse(await fetch('/api/student/ratings/'+encodeURIComponent(studentId))),
+        parse(await fetch('/api/student/ratings-history/'+encodeURIComponent(studentId))),
+      ]);
+      el('avg').textContent=Number(summary.rating_avg||0).toFixed(1);
+      el('count').textContent=String(summary.rating_count||0);
+      const rows=history.history||[];
+      if(!rows.length){ el('rows').innerHTML='<tr><td colspan=\"7\">No rating history available.</td></tr>'; show({summary,history_count:0}); return; }
+      el('rows').innerHTML=rows.map((r)=>`<tr><td>${r.session_id||'-'}</td><td>${r.patient_name||r.patient_id||'-'}</td><td>${r.patient_uhid||'-'}</td><td>${r.problem||'-'}</td><td>${r.rating ?? '-'}</td><td>${r.feedback||'-'}</td><td>${r.rated_at||'-'}</td></tr>`).join('');
+      show({summary,history_count:rows.length});
+    }
+    backBtn.onclick=()=>location.href='/student/dashboard';
+    refreshBtn.onclick=()=>load().catch((e)=>show(e.message||String(e)));
+    load().catch((e)=>show(e.message||String(e)));
+  </script>
+</body>
+</html>

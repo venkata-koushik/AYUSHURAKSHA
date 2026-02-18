@@ -1,0 +1,9 @@
+body{font-family:Segoe UI,Tahoma,sans-serif;background:#f4f8ff;margin:0;padding:24px}
+.card{max-width:1200px;margin:0 auto;background:#fff;padding:20px;border-radius:16px;box-shadow:0 14px 30px rgba(24,45,100,.08)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+textarea,input,button{padding:12px;border-radius:12px}
+textarea,input{border:1px solid #cfdafc}
+button{border:none;background:#2d4cf5;color:#fff;cursor:pointer}
+.out{white-space:pre-wrap;background:#f8faff;border:1px dashed #c7d3ff;padding:10px;border-radius:12px;margin-top:10px}
+@media(max-width:840px){.grid{grid-template-columns:1fr}}

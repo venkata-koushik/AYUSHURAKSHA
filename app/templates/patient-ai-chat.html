@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User AI Chat</title>
+  <style>
+    body{margin:0;font-family:Segoe UI,Tahoma,sans-serif;background:#e8edf5}
+    .wrap{max-width:900px;margin:0 auto;height:100vh;display:flex;flex-direction:column;padding:12px}
+    .top{background:#fff;border:1px solid #d8e0f2;border-radius:12px;padding:10px;display:flex;align-items:center;gap:10px}
+    .back{padding:8px 10px;border-radius:10px;background:#eef3ff;color:#2f438f;text-decoration:none}
+    .chat{flex:1;margin-top:10px;background:#fff;border:1px solid #d8e0f2;border-radius:12px;padding:12px;overflow:auto}
+    .msg{max-width:75%;padding:10px 12px;border-radius:12px;margin-bottom:8px;line-height:1.35}
+    .user{margin-left:auto;background:#dce8ff}
+    .bot{background:#f1f4f9}
+    .send{display:flex;gap:10px;margin-top:10px}
+    .suggestions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .sbtn{border:1px solid #c9d4ee;background:#f3f7ff;color:#17324f;padding:8px 10px;border-radius:999px;cursor:pointer}
+    .sbtn:hover{background:#e7efff}
+    select{padding:12px;border-radius:12px;border:1px solid #c9d4ee;background:#fff;color:#17324f}
+    input{flex:1;padding:12px;border-radius:12px;border:1px solid #c9d4ee}
+    button{padding:12px 16px;border-radius:12px;border:none;background:#3a5aca;color:#fff;cursor:pointer;transition:transform .16s ease,filter .16s ease,opacity .16s ease}
+    button:hover{filter:brightness(1.03)}
+    button:active{transform:scale(.98)}
+    button:disabled{opacity:.7;cursor:not-allowed}
+    .voice{background:#2f855a}
+    .voice.recording{background:#c53030}
+    .loading{display:none;font-size:12px;color:#4b5f87;margin-top:6px}
+    .toast{position:fixed;right:14px;bottom:14px;background:#1f2937;color:#fff;padding:10px 12px;border-radius:10px;box-shadow:0 10px 25px #0003;display:none;max-width:320px}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top"><a class="back" href="/patient/dashboard">Back</a><strong>AI Health Assistant</strong></div>
+    <section id="chat" class="chat"></section>
+    <div class="suggestions" id="suggestions">
+      <button type="button" class="sbtn" data-q="I have mild cold and throat irritation. Give AYUSH natural home-care suggestions.">Natural Cold Care</button>
+      <button type="button" class="sbtn" data-q="Suggest simple yoga and pranayama for stress and better sleep.">Yoga For Stress</button>
+      <button type="button" class="sbtn" data-q="Suggest AYUSH lifestyle tips for better digestion and daily routine.">Digestive Routine</button>
+      <button type="button" class="sbtn" data-q="Give AYUSH wellness tips I can follow daily for immunity and fitness.">Daily AYUSH Wellness</button>
+    </div>
+    <div class="send">
+      <select id="voiceLanguage" title="Voice language">
+        <option value="english">English</option>
+        <option value="hindi">Hindi</option>
+        <option value="telugu">Telugu</option>
+        <option value="tamil">Tamil</option>
+        <option value="kannada">Kannada</option>
+        <option value="marathi">Marathi</option>
+        <option value="malayalam">Malayalam</option>
+        <option value="gujarati">Gujarati</option>
+        <option value="bengali">Bengali</option>
+        <option value="punjabi">Punjabi</option>
+        <option value="odia">Odia</option>
+        <option value="urdu">Urdu</option>
+      </select>
+      <input id="q" placeholder="Type message..." />
+      <button id="voiceBtn" class="voice">Voice</button>
+      <button id="send">Send</button>
+    </div>
+    <div id="loading" class="loading">AI is responding...</div>
+  </main>
+  <div id="toast" class="toast"></div>
+  <script>
+    localStorage.setItem("active_role", "patient");
+    const patientId = localStorage.getItem("patient_id") || "";
+    const patientToken = localStorage.getItem("patient_token") || "";
+    const aiSessionId = localStorage.getItem("ai_session_id") || ("AI-" + Date.now());
+    localStorage.setItem("ai_session_id", aiSessionId);
+    const chatEl = document.getElementById("chat");
+    const qEl = document.getElementById("q");
+    const sendBtn = document.getElementById("send");
+    const voiceLanguageEl = document.getElementById("voiceLanguage");
+    const voiceBtnEl = document.getElementById("voiceBtn");
+    const loadingEl = document.getElementById("loading");
+    const historyKey = `ai_chat_history_${patientId || "guest"}`;
+    const maxHistoryItems = 120;
+    function safe(value){ return String(value || "").replace(/</g,'&lt;'); }
+    function loadHistory(){
+      try {
+        const raw = localStorage.getItem(historyKey) || "[]";
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.filter((x) => x && (x.role === "user" || x.role === "bot") && String(x.text || "").trim());
+      } catch {}
+      return [];
+    }
+    function saveHistory(rows){
+      try {
+        const trimmed = rows.slice(-maxHistoryItems);
+        localStorage.setItem(historyKey, JSON.stringify(trimmed));
+      } catch {}
+    }
+    function pushMessage(role, text, persist = true){
+      const cls = role === "user" ? "user" : "bot";
+      chatEl.insertAdjacentHTML("beforeend", `<div class="msg ${cls}">${safe(text)}</div>`);
+      chatEl.scrollTop = chatEl.scrollHeight;
+      if (!persist) return;
+      const rows = loadHistory();
+      rows.push({ role, text: String(text || ""), at: new Date().toISOString() });
+      saveHistory(rows);
+    }
+    (function restoreChatHistory(){
+      const rows = loadHistory();
+      if (!rows.length) {
+        pushMessage("bot", "Hello. I can provide AYUSH-focused health guidance with natural care and yoga/pranayama suggestions.");
+        return;
+      }
+      rows.forEach((row) => {
+        const cls = row.role === "user" ? "user" : "bot";
+        chatEl.insertAdjacentHTML("beforeend", `<div class="msg ${cls}">${safe(row.text)}</div>`);
+      });
+      chatEl.scrollTop = chatEl.scrollHeight;
+    })();
+    function showToast(message){
+      const t=document.getElementById("toast");
+      t.textContent=message;
+      t.style.display="block";
+      setTimeout(()=>{t.style.display="none";},2600);
+    }
+    async function read(res){
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { guidance: [txt || `HTTP ${res.status}`] }; }
+      if(!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : (txt || `HTTP ${res.status}`));
+      return data;
+    }
+    async function fetchWithTimeout(url, options, ms){
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), ms || 6000);
+      try{
+        return await fetch(url, { ...(options || {}), signal: ctrl.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+    function setSendBusy(busy){
+      sendBtn.disabled = !!busy;
+      sendBtn.textContent = busy ? "Sending..." : "Send";
+      loadingEl.style.display = busy ? "block" : "none";
+    }
+    async function askAI(questionText){
+      const text = (questionText || "").trim();
+      if (!text) return;
+      const language = ((voiceLanguageEl && voiceLanguageEl.value) || localStorage.getItem("chat_voice_language") || "english").trim();
+      pushMessage("user", text);
+      setSendBusy(true);
+      let d = null;
+      try {
+        d = await read(await fetchWithTimeout("/api/ai/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: text, language }),
+        }, 5000));
+      } catch {
+        d = await read(await fetchWithTimeout("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text, session_id: aiSessionId, language }),
+        }, 5000));
+      }
+      const reply = d.response || (d.guidance || []).join(" ");
+      pushMessage("bot", String(reply || ""));
+      console.log("patient ai chat working", d);
+      qEl.value = "";
+      setSendBusy(false);
+    }
+    sendBtn.onclick = () => askAI(qEl.value.trim()).catch((e)=>{
+      setSendBusy(false);
+      pushMessage("bot", e.message || String(e));
+    });
+    qEl.addEventListener("keydown",(e)=>{ if(e.key==="Enter") sendBtn.click(); });
+    document.querySelectorAll("#suggestions .sbtn").forEach((btn)=>{
+      btn.addEventListener("click", ()=>{
+        const q = String(btn.getAttribute("data-q") || "").trim();
+        if(!q) return;
+        qEl.value = q;
+        sendBtn.click();
+      });
+    });
+
+    const voiceState = { recording:false, stream:null, recorder:null, chunks:[], sr:null, srBuffer:"" };
+    function setVoiceUi(on){
+      voiceBtnEl.classList.toggle("recording", !!on);
+      voiceBtnEl.style.background = on ? "#c53030" : "#2f855a";
+      voiceBtnEl.style.color = "#fff";
+      voiceBtnEl.textContent = on ? "Stop Voice" : "Voice";
+    }
+    function preferredSpeechLang(){
+      const raw = ((voiceLanguageEl && voiceLanguageEl.value) || localStorage.getItem("chat_voice_language") || localStorage.getItem("patient_language") || localStorage.getItem("consult_language") || localStorage.getItem("language_preference") || "english").toLowerCase().trim();
+      const map = {
+        english:"en-IN", en:"en-IN",
+        hindi:"hi-IN", hindhi:"hi-IN", hi:"hi-IN",
+        telugu:"te-IN", telgu:"te-IN", te:"te-IN",
+        tamil:"ta-IN", ta:"ta-IN",
+        kannada:"kn-IN", kannda:"kn-IN", kn:"kn-IN",
+        marathi:"mr-IN", marati:"mr-IN", mr:"mr-IN",
+        malayalam:"ml-IN", ml:"ml-IN",
+        gujarati:"gu-IN", gu:"gu-IN",
+        bengali:"bn-IN", bn:"bn-IN",
+        punjabi:"pa-IN", pa:"pa-IN",
+        odia:"or-IN", oriya:"or-IN", or:"or-IN",
+        urdu:"ur-IN", ur:"ur-IN",
+        assamese:"as-IN", as:"as-IN",
+        nepali:"ne-IN", ne:"ne-IN",
+        sanskrit:"sa-IN", sa:"sa-IN"
+      };
+      return map[raw] || "en-IN";
+    }
+    const browserSpeechStart = async () => {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) throw new Error("Voice recording not supported in this browser.");
+      if (voiceState.sr) { try { voiceState.sr.stop(); } catch {} voiceState.sr = null; }
+      voiceState.srBuffer = "";
+      const rec = new SR();
+      rec.lang = preferredSpeechLang();
+      rec.interimResults = true;
+      rec.continuous = true;
+      rec.maxAlternatives = 1;
+      rec.onresult = (e) => {
+        let finalChunk = "";
+        for(let i=e.resultIndex;i<e.results.length;i++){
+          const r = e.results[i];
+          const txt = ((r && r[0] && r[0].transcript) || "").trim();
+          if(!txt) continue;
+          if(r.isFinal) finalChunk += (finalChunk ? " " : "") + txt;
+        }
+        if(finalChunk) voiceState.srBuffer += (voiceState.srBuffer ? " " : "") + finalChunk;
+      };
+      rec.onerror = () => {};
+      rec.onend = () => {
+        if (voiceState.recording && voiceState.sr) {
+          try { rec.start(); } catch {}
+        }
+      };
+      voiceState.sr = rec;
+      try { rec.start(); } catch (e) { voiceState.sr = null; throw e; }
+    };
+    async function startVoiceCapture(){
+      if (voiceState.recording) return;
+      loadingEl.style.display = "block";
+      voiceState.recording = true;
+      setVoiceUi(true);
+      if (!navigator.mediaDevices || !window.MediaRecorder) {
+        await browserSpeechStart();
+        return;
+      }
+      voiceState.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      voiceState.chunks = [];
+      const mime = (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) ? "audio/webm;codecs=opus" : "audio/webm";
+      voiceState.recorder = new MediaRecorder(voiceState.stream, { mimeType: mime });
+      voiceState.recorder.ondataavailable = (e) => { if (e.data && e.data.size) voiceState.chunks.push(e.data); };
+      voiceState.recorder.start(1000);
+    }
+    async function stopVoiceCapture(){
+      if (!voiceState.recording) return;
+      voiceState.recording = false;
+      setVoiceUi(false);
+      const processTranscript = async (transcript) => {
+        const t = String(transcript || "").trim();
+        if (!t) throw new Error("No voice transcript generated.");
+        qEl.value = t;
+        await askAI(t);
+      };
+      if (voiceState.sr) {
+        const rec = voiceState.sr;
+        voiceState.sr = null;
+        try { rec.onend = null; rec.stop(); } catch {}
+        try { await processTranscript(voiceState.srBuffer); }
+        finally {
+          voiceState.srBuffer = "";
+          loadingEl.style.display = "none";
+        }
+        return;
+      }
+      const recorder = voiceState.recorder;
+      const stream = voiceState.stream;
+      voiceState.recorder = null;
+      voiceState.stream = null;
+      if (!recorder || !stream) {
+        loadingEl.style.display = "none";
+        throw new Error("Microphone stream unavailable.");
+      }
+      await new Promise((resolve) => {
+        recorder.onstop = resolve;
+        try { recorder.stop(); } catch { resolve(); }
+      });
+      try {
+        stream.getTracks().forEach((t) => t.stop());
+      } catch {}
+      try {
+        const blob = new Blob(voiceState.chunks, { type: "audio/webm" });
+        const fd = new FormData();
+        fd.append("file", blob, "patient_voice.webm");
+        fd.append("language", preferredSpeechLang());
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 15000);
+        let d = null;
+        try { d = await read(await fetch("/api/transcribe", { method: "POST", body: fd, signal: ctrl.signal })); }
+        finally { clearTimeout(timer); }
+        const transcript = (d && d.transcript ? d.transcript : "").trim();
+        await processTranscript(transcript);
+        console.log("patient voice transcript", d);
+      } catch (e) {
+        pushMessage("bot", e.message || String(e));
+      } finally {
+        voiceState.chunks = [];
+        loadingEl.style.display = "none";
+      }
+    }
+    voiceBtnEl.onclick = async () => {
+      try {
+        if (!voiceState.recording) {
+          await startVoiceCapture();
+          showToast("Voice recording started. Click again to stop.");
+          return;
+        }
+        await stopVoiceCapture();
+        showToast("Voice recording stopped.");
+      } catch (e) {
+        voiceState.recording = false;
+        setVoiceUi(false);
+        loadingEl.style.display = "none";
+        pushMessage("bot", e.message || String(e));
+      }
+    };
+    if (voiceLanguageEl) {
+      const initialLang = (localStorage.getItem("chat_voice_language") || localStorage.getItem("patient_language") || "english").toLowerCase();
+      const opts = Array.from(voiceLanguageEl.options).map((o) => o.value);
+      voiceLanguageEl.value = opts.includes(initialLang) ? initialLang : "english";
+      voiceLanguageEl.addEventListener("change", () => {
+        localStorage.setItem("chat_voice_language", voiceLanguageEl.value);
+      });
+      localStorage.setItem("chat_voice_language", voiceLanguageEl.value);
+    }
+
+    let ws = null;
+    function connectAiWs(){
+      if (!patientToken) return;
+      const proto = location.protocol === "https:" ? "wss" : "ws";
+      ws = new WebSocket(`${proto}://${location.host}/ws/chat/${encodeURIComponent(aiSessionId)}?token=${encodeURIComponent(patientToken)}`);
+      ws.onclose = () => setTimeout(connectAiWs, 1500);
+      ws.onmessage = (evt) => {
+        try{
+          const p = JSON.parse(evt.data);
+          if(p.type === "ai_stream" && p.text){
+            pushMessage("bot", String(p.text), false);
+          }
+        }catch{}
+      };
+    }
+    connectAiWs();
+
+    if (patientId && patientToken) {
+      let notifyWs = null;
+      const connectNotify = () => {
+        const proto = location.protocol === "https:" ? "wss" : "ws";
+        notifyWs = new WebSocket(`${proto}://${location.host}/ws/notifications/patient/${encodeURIComponent(patientId)}?token=${encodeURIComponent(patientToken)}`);
+        notifyWs.onmessage = (evt) => {
+          try{
+            const p = JSON.parse(evt.data);
+            if(p.message) showToast(p.message);
+          }catch{}
+        };
+        notifyWs.onclose = () => setTimeout(connectNotify, 1500);
+      };
+      connectNotify();
+    } else {
+      pushMessage("bot", "Session token missing. Please login again.");
+    }
+  </script>
+</body>
+</html>
+
+

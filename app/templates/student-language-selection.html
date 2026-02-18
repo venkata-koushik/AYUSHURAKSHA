@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Senior Medical Student Consultant Language</title>
+  <link rel="stylesheet" href="/static/pages/css/student-language-selection.css" />
+</head>
+<body>
+  <div class="card">
+    <h2>Senior Medical Student Consultant Language Selection</h2>
+    <select id="language">
+      <option>Hindi</option>
+      <option>Tamil</option>
+      <option>Telugu</option>
+      <option>Kannada</option>
+      <option>English</option>
+    </select>
+    <button id="confirm">Confirm</button>
+    <pre id="out" class="out"></pre>
+  </div>
+  <script>
+    localStorage.setItem("active_role", "student");
+    async function parse(res){
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { detail: txt || ("HTTP " + res.status) }; }
+      if(!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : (txt || ("HTTP " + res.status)));
+      return data;
+    }
+    confirm.onclick = async () => {
+      try {
+        const studentId = localStorage.getItem("student_id");
+        if (!studentId) throw new Error("Student session missing. Login first.");
+        const d = await parse(await fetch("/api/student/online", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ student_id: studentId, language: language.value }),
+        }));
+        out.textContent = JSON.stringify(d, null, 2);
+        localStorage.setItem("student_language", language.value);
+        console.log("senior medical student consultant language confirm working", d);
+        location.href = "/student/dashboard";
+      } catch (e) {
+        out.textContent = e.message || String(e);
+      }
+    };
+  </script>
+</body>
+</html>
+
+

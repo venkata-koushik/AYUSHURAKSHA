@@ -1,0 +1,6 @@
+body{font-family:Segoe UI,Tahoma,sans-serif;background:#eef3ff;margin:0;padding:24px}
+.card{max-width:860px;margin:0 auto;background:#fff;padding:20px;border-radius:16px;box-shadow:0 14px 30px rgba(24,45,100,.08)}
+input,button{padding:12px;border-radius:12px}
+input{width:100%;border:1px solid #cfdafc}
+button{margin-top:10px;border:none;background:#2d4cf5;color:#fff;cursor:pointer}
+.out{white-space:pre-wrap;background:#f8faff;border:1px dashed #c7d3ff;padding:10px;border-radius:12px;margin-top:10px}

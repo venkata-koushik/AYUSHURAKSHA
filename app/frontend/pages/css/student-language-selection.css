@@ -1,0 +1,6 @@
+body{font-family:Segoe UI,Tahoma,sans-serif;background:#f4f8ff;margin:0;padding:24px}
+.card{max-width:760px;margin:0 auto;background:#fff;padding:20px;border-radius:16px;box-shadow:0 14px 30px rgba(24,45,100,.08)}
+select,button{width:100%;padding:12px;border-radius:12px;margin:8px 0}
+select{border:1px solid #cfdafc}
+button{border:none;background:#2d4cf5;color:#fff;cursor:pointer}
+.out{white-space:pre-wrap;background:#f8faff;border:1px dashed #c7d3ff;padding:10px;border-radius:12px;margin-top:10px}

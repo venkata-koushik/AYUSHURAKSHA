@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload External Hospital Report</title>
+  <style>
+    body { margin:0; font-family:"Poppins","Inter",sans-serif; background:#f4f7fb; color:#173451; }
+    .page { max-width: 900px; margin: 0 auto; padding: 18px; }
+    .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .back { border:0; border-radius:10px; padding:10px 12px; cursor:pointer; }
+    .card { background:#fff; border:1px solid #d7e5f5; border-radius:14px; padding:16px; box-shadow:0 10px 20px rgba(15,61,108,.1); }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .field { display:flex; flex-direction:column; gap:6px; }
+    input, textarea { border:1px solid #d4e3f5; border-radius:10px; padding:11px; font-family:inherit; }
+    textarea { min-height: 70px; resize: vertical; }
+    button { border:0; border-radius:10px; padding:11px 13px; font-weight:700; cursor:pointer; font-family:inherit; }
+    .upload { background:linear-gradient(120deg,#1E5DA8,#2D7BE5); color:#fff; margin-top:10px; }
+    .list { margin-top:12px; display:grid; gap:8px; }
+    .item { border:1px solid #dbe8f7; border-radius:10px; padding:10px; display:flex; justify-content:space-between; gap:8px; align-items:center; }
+    .item p { margin:2px 0; font-size:.86rem; color:#3c5c7e; }
+    .view { border:1px solid #c6dcf8; background:#eef5ff; color:#174e91; border-radius:8px; padding:7px 10px; text-decoration:none; font-size:.8rem; font-weight:700; }
+    pre { margin-top:10px; border:1px dashed #c8d9ef; background:#f8fbff; border-radius:10px; padding:10px; min-height:44px; white-space:pre-wrap; }
+    @media (max-width: 760px){ .grid{ grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="top">
+      <button class="back" type="button" onclick="location.href='/patient/dashboard'">&#8592; Back</button>
+      <strong>Upload New Report</strong>
+    </div>
+
+    <section class="card">
+      <p>If you visited a different hospital, click photo/upload document here and keep all health history in one QR identity.</p>
+      <div class="grid">
+        <div class="field"><label>Hospital Name</label><input id="hospital" placeholder="Hospital / Clinic" /></div>
+        <div class="field"><label>Upload Photo / PDF</label><input id="fileInput" type="file" accept="image/*,.pdf" capture="environment" /></div>
+      </div>
+      <div class="field" style="margin-top:10px;"><label>Notes</label><textarea id="notes" placeholder="Prescription summary or notes"></textarea></div>
+      <button id="uploadBtn" class="upload" type="button">Upload Report</button>
+      <pre id="status"></pre>
+
+      <h3>Uploaded External Reports</h3>
+      <div id="list" class="list"></div>
+    </section>
+  </main>
+
+  <script>
+    const patientId = localStorage.getItem('patient_id');
+    const list = document.getElementById('list');
+    const status = document.getElementById('status');
+
+    function show(v){ status.textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2); }
+    async function parse(res){
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { detail: txt || ('HTTP ' + res.status) }; }
+      if(!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : (txt || ('HTTP ' + res.status)));
+      return data;
+    }
+
+    async function loadList(){
+      if(!patientId){ list.innerHTML = '<p>No patient session. Login first.</p>'; return; }
+      const data = await parse(await fetch('/api/patient/uploaded-reports?patient_id=' + encodeURIComponent(patientId)));
+      const reports = data.reports || [];
+      if(!reports.length){ list.innerHTML = '<p>No uploaded external reports yet.</p>'; return; }
+      list.innerHTML = reports.slice().reverse().map((r) =>
+        '<article class="item"><div>'
+        + '<p><strong>' + (r.original_name || r.file_name) + '</strong></p>'
+        + '<p>' + (r.hospital_name || '-') + ' | ' + (r.uploaded_at || '') + '</p>'
+        + '<p>' + (r.note || '-') + '</p></div>'
+        + '<a class="view" target="_blank" href="/api/patient/uploaded-report-file/' + encodeURIComponent(patientId) + '/' + encodeURIComponent(r.file_name) + '">View</a>'
+        + '</article>'
+      ).join('');
+    }
+
+    document.getElementById('uploadBtn').addEventListener('click', async () => {
+      try {
+        if(!patientId) throw new Error('No patient session. Login first.');
+        const file = document.getElementById('fileInput').files[0];
+        if(!file) throw new Error('Select a report file first.');
+        const form = new FormData();
+        form.append('patient_id', patientId);
+        form.append('file', file);
+        form.append('hospital_name', document.getElementById('hospital').value.trim() || 'External Hospital');
+        form.append('note', document.getElementById('notes').value.trim());
+        const data = await parse(await fetch('/api/patient/upload-report', { method:'POST', body: form }));
+        show(data);
+        document.getElementById('fileInput').value = '';
+        document.getElementById('notes').value = '';
+        await loadList();
+      } catch(e){ show(e.message || String(e)); }
+    });
+
+    loadList().catch((e) => show(e.message || String(e)));
+  </script>
+</body>
+</html>
+
+

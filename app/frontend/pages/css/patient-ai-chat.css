@@ -1,0 +1,9 @@
+body{font-family:Segoe UI,Tahoma,sans-serif;background:#f4f8ff;margin:0;padding:24px}
+.card{max-width:1000px;margin:0 auto;background:#fff;padding:20px;border-radius:16px;box-shadow:0 14px 30px rgba(24,45,100,.08)}
+textarea,button{width:100%;padding:12px;border-radius:12px}
+textarea{border:1px solid #cfdafc}
+button{margin-top:8px;border:none;background:#2d4cf5;color:#fff;cursor:pointer}
+.chat{margin-top:12px;display:grid;gap:8px}
+.bubble{padding:10px 12px;border-radius:12px;max-width:80%}
+.user{background:#e8eeff;justify-self:end}
+.bot{background:#fff5cc;justify-self:start}

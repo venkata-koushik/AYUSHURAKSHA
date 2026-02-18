@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Health History Timeline</title>
+  <style>
+    body { margin: 0; font-family: "Poppins", "Inter", sans-serif; background: #f4f7fb; color: #183452; }
+    .page { max-width: 980px; margin: 0 auto; padding: 18px; }
+    .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .back { border: 0; border-radius: 10px; padding: 10px 12px; background: #fff; cursor: pointer; }
+    .timeline { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 8px 20px rgba(17,56,97,0.09); }
+    .item { position: relative; margin-left: 14px; padding-left: 18px; padding-bottom: 14px; border-left: 2px solid #cde0f8; }
+    .item::before { content: ""; position: absolute; left: -6px; top: 3px; width: 10px; height: 10px; border-radius: 50%; background: #2d7be5; }
+    .item h4 { margin: 0 0 6px; }
+    .item p { margin: 3px 0; color: #395777; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="top">
+      <button class="back" type="button" onclick="location.href='/patient/dashboard'">&#8592; Back</button>
+      <strong>Health History Timeline</strong>
+    </div>
+    <section class="timeline" id="timeline"></section>
+  </main>
+
+  <script>
+    const uhid = localStorage.getItem('patient_uhid');
+    const timeline = document.getElementById('timeline');
+
+    async function parse(res) {
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { detail: txt || ('HTTP ' + res.status) }; }
+      if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : (txt || ('HTTP ' + res.status)));
+      return data;
+    }
+
+    async function load() {
+      if (!uhid) throw new Error('No UHID found. Please login again.');
+      const data = await parse(await fetch('/api/patient_history/' + encodeURIComponent(uhid)));
+      const history = (data.history || []).slice().reverse();
+      if (!history.length) {
+        timeline.innerHTML = '<p>No timeline entries yet.</p>';
+        return;
+      }
+      timeline.innerHTML = history.map((item) => {
+        const v = item.visit || {};
+        const dx = (item.diagnosis || []).map((d) => d.disease_name || ('Category ' + d.disease_category)).join(', ') || '-';
+        return '<article class="item">'
+          + '<h4>' + (v.visit_date || '').slice(0, 10) + '</h4>'
+          + '<p><strong>Diagnosis:</strong> ' + dx + '</p>'
+          + '<p><strong>Consultation:</strong> ' + (v.consultation_type || '-') + '</p>'
+          + '<p><strong>Notes:</strong> ' + (v.notes || '-') + '</p>'
+          + '</article>';
+      }).join('');
+    }
+
+    load().catch((e) => {
+      timeline.innerHTML = '<p>' + (e.message || String(e)) + '</p>';
+    });
+  </script>
+</body>
+</html>
+
+

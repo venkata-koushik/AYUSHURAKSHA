@@ -1,0 +1,87 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: linear-gradient(160deg, #edf4ff, #f8fbff 45%, #fff5ef);
+  color: #17304a;
+}
+
+.shell {
+  max-width: 980px;
+  margin: 24px auto;
+  padding: 16px;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #d6e1ef;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+h1, h2, h3 {
+  margin: 0 0 10px;
+}
+
+.grid {
+  display: grid;
+  gap: 10px;
+}
+
+.grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+input, button, textarea, select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #bfd0e4;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+button {
+  width: auto;
+  background: #1567c5;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #0d8a73;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.out {
+  white-space: pre-wrap;
+  background: #f6f9ff;
+  border: 1px dashed #bfd0e4;
+  border-radius: 8px;
+  padding: 8px;
+  min-height: 60px;
+}
+
+.topnav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.topnav a {
+  color: #1567c5;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .grid.two {
+    grid-template-columns: 1fr;
+  }
+}

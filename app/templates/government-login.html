@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Government Official Login</title>
+  <style>
+    :root{--blue1:#0f3f7c;--blue2:#2d7be5;--line:#cfe0f5;--bg:#edf4fc}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,Segoe UI,sans-serif;background:radial-gradient(900px 380px at 80% -20%,#dceaff,transparent),var(--bg);color:#173758}
+    .wrap{max-width:520px;margin:0 auto;padding:40px 18px}
+    .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 40px rgba(15,63,124,.14);padding:18px}
+    .head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    .badge{width:42px;height:42px;border-radius:50%;background:linear-gradient(120deg,var(--blue1),var(--blue2));color:#fff;display:grid;place-items:center;font-weight:800}
+    h2{margin:0} p{margin:6px 0 0;color:#5f7993}
+    .field{display:grid;gap:6px;margin-top:10px}
+    input{padding:11px;border:1px solid var(--line);border-radius:10px}
+    .row{display:flex;gap:10px;margin-top:12px}
+    button{flex:1;padding:11px;border-radius:10px;border:0;font-weight:700;cursor:pointer}
+    .pri{background:linear-gradient(120deg,var(--blue1),var(--blue2));color:#fff}
+    .soft{background:#fff;border:1px solid var(--line);color:#174274}
+    .out{margin-top:12px;white-space:pre-wrap;background:#f7fbff;border:1px dashed #bfd4ef;border-radius:10px;padding:10px;min-height:58px}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <div class="head"><div class="badge">GOI</div><div><h2>Official Access</h2><p>Government of India National Digital Health Portal</p></div></div>
+      <div class="field"><label>Username</label><input id="username" placeholder="Government username" /></div>
+      <div class="field"><label>Password</label><input id="password" type="password" placeholder="Password" /></div>
+      <div class="row">
+        <button id="loginBtn" class="pri" type="button">Login</button>
+        <button id="backBtn" class="soft" type="button">Back</button>
+      </div>
+      <pre id="out" class="out"></pre>
+    </section>
+  </main>
+  <script>
+    const out=document.getElementById('out');
+    const show=(v)=>{out.textContent=typeof v==='string'?v:JSON.stringify(v,null,2);console.log('[GovLogin]',v);};
+    async function parse(res){const txt=await res.text();let d={};try{d=txt?JSON.parse(txt):{}}catch{d={detail:txt||('HTTP '+res.status)}}if(!res.ok)throw new Error(typeof d.detail==='string'?d.detail:(txt||('HTTP '+res.status)));return d;}
+    loginBtn.onclick=async()=>{
+      try{
+        if(!username.value.trim()||!password.value.trim()) throw new Error('Enter username and password.');
+        const d=await parse(await fetch('/api/government/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:username.value.trim(),password:password.value})}));
+        localStorage.setItem('government_token',d.token||'');
+        localStorage.setItem('government_user',d.username||'');
+        show({login:true,user:d.username});
+        location.href='/government/dashboard';
+      }catch(e){show(e.message||String(e))}
+    };
+    backBtn.onclick=()=>location.href='/select-role';
+  </script>
+</body>
+</html>

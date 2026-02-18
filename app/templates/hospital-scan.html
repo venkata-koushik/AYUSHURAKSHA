@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hospital Scanner</title>
+  <link rel="stylesheet" href="/static/pages/css/hospital-scan.css" />
+</head>
+<body>
+  <div class="card">
+    <h2>Hospital QR Scanner</h2>
+    <input id="qrToken" placeholder="Paste scanned QR token" />
+    <button id="scanBtn">Scan</button>
+    <pre id="out" class="out"></pre>
+  </div>
+  <script>
+    qrToken.value = localStorage.getItem("qr_token") || "";
+    async function parse(res){
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { detail: txt || ("HTTP " + res.status) }; }
+      if(!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : (txt || ("HTTP " + res.status)));
+      return data;
+    }
+    scanBtn.onclick = async () => {
+      try {
+        const token = qrToken.value.trim();
+        if (!token) throw new Error("Enter QR token.");
+        const d = await parse(await fetch("/api/hospital/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ qr_token: token }),
+        }));
+        out.textContent = JSON.stringify(d, null, 2);
+        console.log("hospital scanner working", d);
+      } catch (e) {
+        out.textContent = e.message || String(e);
+      }
+    };
+  </script>
+</body>
+</html>
+
+

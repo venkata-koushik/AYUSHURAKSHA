@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Doctor Dashboard</title>
+<style>
+:root{--b1:#0f3f7c;--b2:#2D7BE5;--line:#d6e4f6;--bg:#eef4fc;--card:#fff;--txt:#122a47;--mut:#56708f}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,sans-serif;color:var(--txt);background:var(--bg)}
+.top{background:linear-gradient(120deg,var(--b1),var(--b2));color:#fff;padding:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:center}
+.chips{justify-self:end;display:flex;gap:8px;align-items:center}.chip{background:#ffffff2e;border:1px solid #ffffff5e;border-radius:999px;padding:6px 10px;font-size:12px}
+.avatar{width:36px;height:36px;border-radius:50%;border:1px solid #fff4;background:#dbeaff;color:#0f3f7c;font-weight:800;cursor:pointer}
+.page{max-width:1280px;margin:0 auto;padding:14px}.head{display:flex;justify-content:space-between;margin-bottom:10px}
+.btn{border:0;border-radius:10px;padding:10px 12px;cursor:pointer;font-weight:700}.btn:hover{opacity:.92}.back,.soft{background:#fff;border:1px solid var(--line)}
+.primary{background:linear-gradient(120deg,#1E5DA8,#2D7BE5);color:#fff}.ok{background:linear-gradient(120deg,#0f766e,#14b8a6);color:#fff}.warn{background:linear-gradient(120deg,#f59e0b,#f97316);color:#fff}.danger{background:linear-gradient(120deg,#be123c,#e11d48);color:#fff}
+.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:12px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.h{padding:12px;border-bottom:1px solid var(--line);background:#f8fbff;display:flex;justify-content:space-between}.b{padding:12px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{display:flex;flex-direction:column;gap:6px}label{font-size:12px;color:#3b597a;font-weight:600}
+input,textarea{border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit}textarea{min-height:84px;resize:vertical}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.pcard{display:none;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:10px}
+.pav{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:#ddeefe;font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;border-bottom:1px solid #edf3fc;text-align:left}tbody tr{cursor:pointer}
+#reportWidget{display:none;border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:10px}.diag{display:flex;flex-wrap:wrap;gap:6px}.pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 10px;font-size:12px;cursor:pointer}.pill.on{background:#e9f2ff}
+.dot{width:10px;height:10px;border-radius:50%;background:#94a3b8}.dot.on{background:#22c55e}.preview{margin-top:10px;border:1px dashed #aacaf2;border-radius:10px;padding:10px;background:#f8fbff}.log{margin-top:10px;background:#0b1626;color:#d7e4f7;border-radius:10px;padding:10px;min-height:90px;white-space:pre-wrap;font-size:12px}.toast{position:fixed;right:14px;bottom:14px;background:#111827;color:#fff;padding:10px 12px;border-radius:10px;display:none;max-width:320px;box-shadow:0 10px 24px #0003}
+.modal{position:fixed;inset:0;background:#04172e7a;display:none;align-items:center;justify-content:center;padding:16px;z-index:1000}.modal.open{display:flex}.mcard{max-width:560px;width:100%;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}.mh{padding:10px 12px;background:#f4f9ff;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}.mb{padding:12px}
+.scan-stage{position:relative}.scan-overlay{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}.scan-box{width:72%;height:62%;border:3px solid #22c55e;border-radius:14px;box-shadow:0 0 0 9999px #00000044;animation:pulse 1.3s infinite}.scan-msg{margin-top:8px;font-size:12px;color:#385877}.scan-ok{color:#15803d;font-weight:700;animation:pop .24s ease}@keyframes pulse{0%{transform:scale(.98)}50%{transform:scale(1)}100%{transform:scale(.98)}}@keyframes pop{from{transform:scale(.92);opacity:.3}to{transform:scale(1);opacity:1}}
+.hidden-field{display:none}
+#manualReportFile{display:none}@media(max-width:1100px){.top{grid-template-columns:1fr}.grid{grid-template-columns:1fr}}@media(max-width:760px){.fgrid{grid-template-columns:1fr}}
+</style></head><body>
+<header class="top"><div><b>Government of India - National Digital Health Portal</b><div style="font-size:12px">Digital Health Record System</div></div><div style="text-align:center">Welcome, Dr. <span id="doctorNameTop">Doctor</span> (<span id="doctorIdTop">DOCTOR-ID</span>)</div><div class="chips"><span class="chip">Today: <b id="todayCount">0</b></span><span class="chip">Week: <b id="weekCount">0</b></span><span class="chip">Month: <b id="monthCount">0</b></span><button class="avatar" id="docAvatar" type="button">Dr</button></div></header>
+<main class="page"><div class="head"><button class="btn back" onclick="location.href='/doctor/login'">&larr; Back</button></div>
+<section class="grid"><section class="card"><div class="h"><b>Patient Summary</b><span style="font-size:12px;color:var(--mut)">Reports | QR Scan | Patient Search</span></div><div class="b">
+<div class="fgrid"><div class="field hidden-field"><label>Doctor ID</label><input id="doctorId"/></div><div class="field hidden-field"><label>Doctor Name</label><input id="doctorName"/></div><div class="field"><label>Patient UHID</label><input id="uhid"/></div><div class="field"><label>QR Token</label><input id="qrToken" readonly/></div></div>
+<div class="row"><button class="btn soft" id="reportsBtn">Reports</button><button class="btn primary" id="scanBtn">Open Scanner</button><button class="btn soft" id="searchBtn">Patient Search</button></div>
+<div class="row"><button class="btn primary" id="scanLoadBtn">Scan & Load Patient</button></div>
+<div class="pcard" id="patientCard"><div class="pav">P</div><div><b id="pName">Waiting for Patient</b><div id="pMeta">UHID: - | Age: - | Blood Group: -</div><div id="pLocation">Location: -</div><div id="pFlags">Allergies/Chronic Conditions: -</div></div></div>
+<div style="margin-top:10px;overflow:auto;border:1px solid var(--line);border-radius:10px"><table><thead><tr><th>Date</th><th>Diagnosis</th><th>Doctor Name</th><th>Action</th></tr></thead><tbody id="historyBody"><tr><td colspan="4">Waiting for Patient</td></tr></tbody></table></div>
+<div id="reportWidget"><b>Visit Report Widget</b><div id="visitDate">Date: -</div><div id="visitDiagnosis">Diagnosis: -</div><div id="visitMedicines">Prescriptions: -</div><div id="visitVitals">Generated Report: -</div><div id="visitManual">Manual Report: -</div></div>
+</div></section>
+<aside class="card"><div class="h"><b>Structured Clinical Dictation</b><div style="display:flex;align-items:center;gap:8px"><span class="dot" id="micDot"></span><span id="micLabel">Mic OFF</span></div></div><div class="b">
+<div class="field"><label>Clinical Voice/Text Input</label><textarea id="rawTranscript" placeholder="Speak using Start Voice Detection or type clinical notes here..."></textarea></div>
+<div class="row"><button class="btn soft" id="micCheckBtn">Mic Status Check</button><button class="btn soft" id="summarizeBtn">Summarise</button></div>
+<button class="btn primary" id="voiceBtn" style="width:100%;min-height:58px;font-size:16px;letter-spacing:.2px;box-shadow:0 10px 20px rgba(30,93,168,.24)">Start Voice Detection</button>
+<div class="row"><button class="btn soft" id="structureBtn">Generate Structured Report</button></div>
+<div class="field" style="margin-top:10px"><label>Complaint / Problem</label><textarea id="complaint"></textarea></div>
+<div class="field" style="margin-top:10px"><label>Diagnosis</label><div class="diag" id="diagWrap"></div></div>
+<div class="field" style="margin-top:10px"><label>Medicine Prescribed</label><input id="medicines"/></div>
+<div class="field" style="margin-top:10px"><label>Lifestyle Advice</label><input id="advice"/></div>
+<div class="field" style="margin-top:10px"><label>Manual Notes / Suggestions</label><textarea id="notes"></textarea></div>
+<div class="row"><button class="btn soft" id="manualReportBtn">Manual Report Photo</button><input id="manualReportFile" type="file" accept="image/*" capture="environment"/></div>
+<div class="row"><button class="btn danger" id="finalizeBtn">Finalize & Submit</button></div>
+<div class="preview" id="preview"></div><pre class="log" id="log"></pre>
+</div></aside></section></main>
+
+<section class="modal" id="profileModal"><div class="mcard"><div class="mh"><b>Doctor Profile</b><button class="btn soft" id="closeProfileBtn">Close</button></div><div class="mb"><div class="fgrid"><div class="field"><label>Doctor ID (locked)</label><input id="profileDoctorId" readonly/></div><div class="field"><label>Government License ID (locked)</label><input id="profileLicenseId" readonly/></div><div class="field"><label>Doctor Name</label><input id="profileFullName"/></div><div class="field"><label>Email</label><input id="profileEmail"/></div><div class="field"><label>Phone</label><input id="profilePhone"/></div><div class="field"><label>Address</label><input id="profileAddress"/></div></div><div class="row"><button class="btn ok" id="saveProfileBtn">Save Profile Changes</button></div></div></div></section>
+<section class="modal" id="scannerModal"><div class="mcard"><div class="mh"><b>QR Scanner</b><button class="btn soft" id="closeScannerBtn">Close</button></div><div class="mb"><div class="field"><label>Camera Scanner</label><div class="scan-stage"><video id="scannerVideo" autoplay muted playsinline style="width:100%;max-height:260px;border:1px solid var(--line);border-radius:10px;background:#111"></video><div class="scan-overlay"><div class="scan-box"></div></div></div><div class="scan-msg" id="scanStatus">Align QR inside the box.</div></div><div class="row"><button class="btn soft" id="startCameraBtn">Start Camera</button><button class="btn soft" id="stopCameraBtn">Stop Camera</button></div><div class="field"><label>Paste/scan QR token</label><input id="scannerToken" placeholder="QR::UHID...."/></div><div class="row"><button class="btn primary" id="confirmScanBtn">Scan & Load Patient</button></div><div style="font-size:12px;color:var(--mut)">Primary: BarcodeDetector. Fallback: html5-qrcode. Works on desktop/mobile browsers.</div><div id="html5Scanner" style="display:none"></div></div></div></section>
+<div id="toast" class="toast"></div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+const DIAG=[{c:1,n:'Respiratory'},{c:2,n:'Gastrointestinal'},{c:3,n:'Musculoskeletal'},{c:4,n:'Neurological'},{c:5,n:'Dermatological'},{c:6,n:'Cardiovascular'},{c:7,n:'Endocrine'},{c:8,n:'Genitourinary'},{c:9,n:'ENT'},{c:10,n:'Ophthalmic'},{c:11,n:'Mental Health'},{c:12,n:'General / Other'}];
+const el=(i)=>document.getElementById(i);const state={history:[],selected:new Set(),patient:null,micOn:false,micStream:null,lastSavedVisitId:null,scannerStream:null,scannerTimer:null,noScanTimer:null,html5Scanner:null,scannerActive:false,recorder:null,recordChunks:[],dictationActive:false,dictationTimeout:null,speechRecognizer:null,speechBuffer:'',speechRestartTimer:null,speechStopRequested:false,usingBrowserStt:false,lastSummary:null,manualReportFile:null};
+const log=(v)=>{el('log').textContent=typeof v==='string'?v:JSON.stringify(v,null,2);console.log('[DoctorDashboard]',v)};
+const toast=(m)=>{el('toast').textContent=m;el('toast').style.display='block';setTimeout(()=>{el('toast').style.display='none'},2500)}
+const parse=async(r)=>{const t=await r.text();let d={};try{d=t?JSON.parse(t):{}}catch{d={detail:t||('HTTP '+r.status)}}if(!r.ok)throw new Error(typeof d.detail==='string'?d.detail:(t||('HTTP '+r.status)));return d};
+async function withBusy(id,busyText,fn){const b=el(id);if(!b)return await fn();const idle=b.textContent;try{b.disabled=true;b.textContent=busyText||'Working...';return await fn();}finally{b.disabled=false;b.textContent=idle;}}
+const esc=(t)=>String(t||'').replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+const open=(id)=>el(id).classList.add('open');const close=(id)=>el(id).classList.remove('open');
+function syncDoctor(){const did=el('doctorId').value.trim()||'DOCTOR-ID';const dn=el('doctorName').value.trim()||'Doctor';el('doctorIdTop').textContent=did;el('doctorNameTop').textContent=dn.replace(/^Dr\.?\s*/i,'');el('docAvatar').textContent=(dn[0]||'D').toUpperCase();localStorage.setItem('doctor_id',did==='DOCTOR-ID'?'':did);localStorage.setItem('doctor_name',dn==='Doctor'?'':dn);preview()}
+function resolveDoctorAndUhid(){
+  const topId=(el('doctorIdTop').textContent||'').trim();
+  const storedId=(localStorage.getItem('doctor_id')||'').trim();
+  const fieldId=(el('doctorId').value||'').trim();
+  const did=[fieldId,storedId,topId].find((v)=>v && v!=='DOCTOR-ID') || '';
+  if(did && !fieldId) el('doctorId').value=did;
+  if(did && !storedId) localStorage.setItem('doctor_id', did);
+
+  const fieldUhid=(el('uhid').value||'').trim();
+  const patientUhid=((state.patient&&state.patient.uhid)||'').trim();
+  const tokenUhid=((el('scannerToken').value||'').match(/(UHID\d{4,})/i)||[])[1] || '';
+  const uhid=[fieldUhid,patientUhid,tokenUhid].find((v)=>v) || '';
+  if(uhid && !fieldUhid) el('uhid').value=uhid;
+
+  return { did, uhid };
+}
+function renderPills(){const h=el('diagWrap');h.innerHTML='';DIAG.forEach((d)=>{const b=document.createElement('button');b.type='button';b.className='pill'+(state.selected.has(d.c)?' on':'');b.textContent=d.c+'. '+d.n;b.onclick=()=>{state.selected.has(d.c)?state.selected.delete(d.c):state.selected.add(d.c);renderPills();preview()};h.appendChild(b)})}
+function preview(){const p=state.patient||{};const n=p.full_name||el('pName').textContent||'Patient';const u=el('uhid').value.trim()||p.uhid||'-';const ds=Array.from(state.selected).sort((a,b)=>a-b).map((c)=>(DIAG.find((d)=>d.c===c)||{}).n||('Category '+c));const manual=(state.manualReportFile&&state.manualReportFile.name)?state.manualReportFile.name:'Not attached';el('preview').innerHTML='<b>Auto-generated medical report preview</b>'+'<p><b>Patient:</b> '+esc(n)+'</p>'+'<p><b>UHID:</b> '+esc(u)+'</p>'+'<p><b>Complaint:</b> '+esc(el('complaint').value||'-')+'</p>'+'<p><b>Diagnosis:</b> '+esc(ds.join(', ')||'-')+'</p>'+'<p><b>Medicines:</b> '+esc(el('medicines').value||'-')+'</p>'+'<p><b>Advice:</b> '+esc(el('advice').value||'-')+'</p>'+'<p><b>Manual Notes:</b> '+esc(el('notes').value||'-')+'</p>'+'<p><b>Manual Report Photo:</b> '+esc(manual)+'</p>'+'<p><b>Doctor Signature:</b> Dr. '+esc(el('doctorName').value||'Doctor')+' ('+esc(el('doctorId').value||'DOCTOR-ID')+')</p>'}
+function renderHistory(){const b=el('historyBody');b.innerHTML='';const rows=(state.history||[]);if(!rows.length){b.innerHTML='<tr><td colspan="4">No visits found.</td></tr>';return}rows.forEach((e,i)=>{const v=e.visit||{};const dt=(v.visit_date||'').slice(0,10)||'-';const dx=(e.diagnosis||[]).map((d)=>d.disease_name||('Category '+d.disease_category)).join(', ')||'-';const tr=document.createElement('tr');tr.innerHTML='<td>'+dt+'</td><td>'+dx+'</td><td>'+(v.doctor_id||'-')+'</td><td>View</td>';tr.onclick=()=>openVisit(i);b.appendChild(tr)})}
+function openVisit(i){const e=(state.history||[])[i]||{};const v=e.visit||{};el('reportWidget').style.display='block';el('visitDate').textContent='Date: '+(v.visit_date||'-');el('visitDiagnosis').textContent='Diagnosis: '+((e.diagnosis||[]).map((d)=>d.disease_name||('Category '+d.disease_category)).join(', ')||'-');el('visitMedicines').textContent='Prescriptions: '+((e.recommendations||[]).map((r)=>r.advice_text).join(' | ')||'-');el('visitVitals').textContent='Generated Report: '+(v.notes||'-');const manual=(e.manual_reports||[]);if(!manual.length){el('visitManual').textContent='Manual Report: -';return}el('visitManual').innerHTML='Manual Report:<div style=\"margin-top:8px;display:grid;gap:10px\">'+manual.map((m)=>'<a href=\"'+esc(m.file_url||'#')+'\" target=\"_blank\" style=\"font-weight:700;color:#1E5DA8\">Open '+esc(m.original_name||m.file_name||'Manual Report')+'</a>'+'<img src=\"'+esc(m.file_url||'')+'\" alt=\"Manual Report\" style=\"max-width:100%;width:100%;border-radius:10px;border:1px solid #d6e4f6\"/>').join('')+'</div>'}
+function renderPatient(profile,meta){el('patientCard').style.display='flex';el('pName').textContent=profile.full_name||meta?.name||'Patient';el('pMeta').textContent='UHID: '+(profile.uhid||'-')+' | Age: '+(meta?.age??'-')+' | Blood Group: '+(profile.blood_group||meta?.blood_group||'-');el('pLocation').textContent='Location: '+(profile.district||'-')+', '+(profile.state||'-');el('pFlags').textContent='Allergies/Chronic Conditions: '+(localStorage.getItem('patient_allergies')||'-')+' / '+(localStorage.getItem('patient_chronic')||'-')}
+async function loadStats(){const did=el('doctorId').value.trim();if(!did)return;const d=await parse(await fetch('/api/doctor/stats?doctor_id='+encodeURIComponent(did)));el('todayCount').textContent=d.patients_today??0;el('weekCount').textContent=d.patients_this_week??0;el('monthCount').textContent=d.patients_this_month??0;console.log('[DoctorDashboard] stats',d)}
+async function loadProfile(){let did=el('doctorId').value.trim()||localStorage.getItem('doctor_id')||'';if(!did)throw new Error('Doctor ID missing. Login again from doctor login page.');el('doctorId').value=did;const d=await parse(await fetch('/api/doctor/profile?doctor_id='+encodeURIComponent(did)));el('profileDoctorId').value=d.doctor_id||'';el('profileLicenseId').value=d.government_license_id||'';el('profileFullName').value=d.full_name||'';el('profileEmail').value=d.email||'';el('profilePhone').value=d.phone||'';el('profileAddress').value=d.address||'';open('profileModal');log({profile_loaded:true,doctor_id:d.doctor_id})}
+async function saveProfile(){const p={doctor_id:el('profileDoctorId').value.trim(),full_name:el('profileFullName').value.trim(),email:el('profileEmail').value.trim(),phone:el('profilePhone').value.trim(),address:el('profileAddress').value.trim()};const d=await parse(await fetch('/api/doctor/profile/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}));el('doctorId').value=d.doctor_id||p.doctor_id;el('doctorName').value=d.full_name||p.full_name;syncDoctor();close('profileModal');log({profile_saved:true,data:d})}
+async function loadByUhid(u){if(!u)throw new Error('UHID required.');const [s,h]=await Promise.all([parse(await fetch('/api/patient_summary/'+encodeURIComponent(u))),parse(await fetch('/api/patient_history/'+encodeURIComponent(u)))]);state.patient=s.patient;state.history=h.history||[];renderPatient(s.patient,null);renderHistory();preview();log({patient_loaded:true,uhid:u})}
+async function scanToken(t){if(!t)throw new Error('QR token required.');const d=await parse(await fetch('/api/hospital/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({qr_token:t})}));const p=d.patient_profile||{};state.history=d.history||[];state.patient={full_name:p.name||'Patient',uhid:d.uhid,blood_group:p.blood_group||'-',district:'-',state:'-'};el('scannerToken').value=t;el('qrToken').value=t;el('uhid').value=d.uhid||'';renderPatient(state.patient,p);renderHistory();preview();log({scan_success:true,uhid:d.uhid})}
+function extractPatientId(raw){const text=String(raw||'').trim();if(!text)return{token:'',patientId:''};const qMatch=text.match(/QR::(UHID\d{4,})::/i);if(qMatch)return{token:text,patientId:qMatch[1].toUpperCase()};const idMatch=text.match(/(UHID\d{4,})/i);if(idMatch)return{token:text.startsWith('QR::')?text:`QR::${idMatch[1].toUpperCase()}::manual`,patientId:idMatch[1].toUpperCase()};return{token:text,patientId:''}}
+function setScanStatus(msg,ok){const s=el('scanStatus');s.textContent=msg;s.className='scan-msg'+(ok?' scan-ok':'')}
+async function onScanSuccess(raw){
+  const parsed=extractPatientId(raw);
+  if(!parsed.token&&!parsed.patientId)return;
+  state.scannerActive=false;
+  if(parsed.token){
+    el('scannerToken').value=parsed.token;
+    el('qrToken').value=parsed.token;
+  }
+  if(parsed.patientId)el('uhid').value=parsed.patientId;
+  setScanStatus('Scan success. Closing scanner...',true);
+  await stopScannerCamera();
+  close('scannerModal');
+  toast('Scan success. Loading patient details...');
+  let loaded=false;
+  if(parsed.token){try{await scanToken(parsed.token);loaded=true}catch{}}
+  if(!loaded&&parsed.patientId){
+    await loadByUhid(parsed.patientId);
+    loaded=true;
+    if(!el('qrToken').value.trim()&&parsed.token)el('qrToken').value=parsed.token;
+  }
+  if(!loaded)throw new Error('QR detected but patient fetch failed.');
+  try{await loadStats()}catch{}
+}
+async function stopScannerCamera(){
+  state.scannerActive=false;
+  if(state.scannerTimer){clearInterval(state.scannerTimer);state.scannerTimer=null}
+  if(state.noScanTimer){clearTimeout(state.noScanTimer);state.noScanTimer=null}
+  if(state.scannerStream){state.scannerStream.getTracks().forEach((t)=>t.stop());state.scannerStream=null}
+  if(state.html5Scanner){
+    try{if(state.html5Scanner.getState&&state.html5Scanner.getState()===2)await state.html5Scanner.stop()}catch{}
+    try{await state.html5Scanner.clear()}catch{}
+    state.html5Scanner=null
+  }
+  const v=el('scannerVideo');
+  if(v)v.srcObject=null;
+  el('html5Scanner').style.display='none';
+}
+async function openCameraStream(){
+  const tries=[
+    {video:{facingMode:{ideal:'environment'}},audio:false},
+    {video:{facingMode:'environment'},audio:false},
+    {video:true,audio:false},
+  ];
+  let lastErr=null;
+  for(const c of tries){
+    try{return await navigator.mediaDevices.getUserMedia(c)}catch(e){lastErr=e}
+  }
+  throw lastErr||new Error('Unable to access camera');
+}
+function scannerPermissionHint(err){
+  const n=(err&&err.name)||'';
+  if(n==='NotAllowedError'||n==='PermissionDeniedError')return 'Camera permission denied. Allow camera access in browser site settings, then retry.';
+  if(n==='NotFoundError'||n==='DevicesNotFoundError')return 'No camera device found. Use QR token input and click Scan & Load Patient.';
+  if(n==='NotReadableError'||n==='TrackStartError')return 'Camera is busy in another app/tab. Close other camera apps and retry.';
+  if(n==='OverconstrainedError')return 'Camera constraint mismatch. Retrying with default camera.';
+  return (err&&err.message)||'Camera start failed. Use QR token input and click Scan & Load Patient.';
+}
+async function startScannerCamera(){
+  await stopScannerCamera();
+  setScanStatus('Starting camera...',false);
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('Camera API not available in this browser. Use QR token input and click Scan & Load Patient.');
+  state.scannerActive=true;
+  state.noScanTimer=setTimeout(()=>{if(state.scannerActive)setScanStatus('No QR detected yet. Keep the code steady inside the frame or paste token manually.',false)},7000);
+  const v=el('scannerVideo');
+  try{
+    state.scannerStream=await openCameraStream();
+  }catch(e){
+    state.scannerActive=false;
+    setScanStatus(scannerPermissionHint(e),false);
+    throw e;
+  }
+  v.srcObject=state.scannerStream;
+  await v.play().catch(()=>null);
+  if('BarcodeDetector' in window){
+    setScanStatus('Scanning with BarcodeDetector...',false);
+    const detector=new BarcodeDetector({formats:['qr_code']});
+    state.scannerTimer=setInterval(async()=>{
+      if(!state.scannerActive)return;
+      try{
+        const codes=await detector.detect(v);
+        if(codes&&codes.length&&codes[0].rawValue)await onScanSuccess(String(codes[0].rawValue));
+      }catch{}
+    },220);
+    return;
+  }
+  setScanStatus('Auto scanner unavailable in this browser. Paste QR token below and click Scan & Load Patient.',false);
+  if(!window.Html5Qrcode)return;
+  el('html5Scanner').style.display='block';
+  state.html5Scanner=new Html5Qrcode('html5Scanner');
+  await state.html5Scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:240,height:240}},(decodedText)=>onScanSuccess(decodedText),()=>{});
+}
+function setVoiceBtnVisual(recording){const b=el('voiceBtn');if(!b)return;if(recording){b.style.background='linear-gradient(120deg,#be123c,#e11d48)';b.style.color='#fff'}else{b.style.background='linear-gradient(120deg,#1E5DA8,#2D7BE5)';b.style.color='#fff'}}
+function setMicUi(status){if(status==='off'){el('voiceBtn').textContent='Start Voice Detection';setVoiceBtnVisual(false);el('micDot').classList.remove('on');el('micLabel').textContent='Mic OFF';return}if(status==='connected'){el('voiceBtn').textContent='Start Voice Detection';setVoiceBtnVisual(false);el('micDot').classList.add('on');el('micLabel').textContent='Mic Connected';return}if(status==='recording'){el('voiceBtn').textContent='Stop Voice Detection';setVoiceBtnVisual(true);el('micDot').classList.add('on');el('micLabel').textContent='Mic Recording';return}}
+async function micToggle(){if(state.micOn){state.dictationActive=false;state.speechStopRequested=true;if(state.speechRestartTimer){clearTimeout(state.speechRestartTimer);state.speechRestartTimer=null}if(state.recorder&&state.recorder.state!=='inactive'){try{state.recorder.stop()}catch{}}if(state.speechRecognizer){try{state.speechRecognizer.stop()}catch{}state.speechRecognizer=null}if(state.micStream){state.micStream.getTracks().forEach((t)=>t.stop());state.micStream=null}state.micOn=false;state.usingBrowserStt=false;setMicUi('off');log('Mic turned OFF');return}state.micStream=await navigator.mediaDevices.getUserMedia({audio:true});state.micOn=true;state.speechStopRequested=false;const track=state.micStream.getAudioTracks&&state.micStream.getAudioTracks()[0];if(track){track.onended=()=>{state.micOn=false;state.dictationActive=false;state.usingBrowserStt=false;setMicUi('off')}}setMicUi('connected');log('Mic turned ON')}
+async function micStatusCheck(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.enumerateDevices)throw new Error('Media devices API unavailable.');
+  const devices=await navigator.mediaDevices.enumerateDevices();
+  const mics=devices.filter((d)=>d.kind==='audioinput');
+  if(!mics.length){el('micDot').classList.remove('on');el('micLabel').textContent='Mic Not Found';throw new Error('No microphone detected.');}
+  if(!state.micOn){try{await micToggle()}catch(e){el('micDot').classList.remove('on');el('micLabel').textContent='Mic Blocked';throw e}}
+  const track=state.micStream&&state.micStream.getAudioTracks?state.micStream.getAudioTracks()[0]:null;
+  if(!track){el('micDot').classList.remove('on');el('micLabel').textContent='Mic Track Missing';throw new Error('Microphone track unavailable.');}
+  if(!track.enabled)track.enabled=true;
+  el('micDot').classList.add('on');el('micLabel').textContent='Mic Connected';toast('Microphone check passed.');log({mic_check:true,devices:mics.length,label:mics[0].label||'audioinput'});
+}
+async function normalizeEnglishText(text){const raw=(text||'').trim();if(!raw)return'';try{const d=await parse(await fetch('/api/text/normalize-english',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:raw})}));return String((d&&d.text)||raw).trim()||raw}catch{return raw}}
+function appendClinicalTranscript(text){const t=(text||'').trim();if(!t)return false;const box=el('rawTranscript');box.value=box.value.trim()?(`${box.value.trim()}\n${t}`):t;box.dispatchEvent(new Event('input'));box.focus();box.scrollTop=box.scrollHeight;preview();return true}
+function browserSpeechToText(ms){return new Promise((resolve,reject)=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){reject(new Error('Browser speech recognition is unavailable.'));return}const rec=new SR();let done=false;rec.lang='en-IN';rec.interimResults=false;rec.maxAlternatives=1;const finish=(ok,v)=>{if(done)return;done=true;try{rec.onresult=null;rec.onerror=null;rec.onend=null;rec.stop()}catch{}ok?resolve(v):reject(v)};rec.onresult=(e)=>{const text=(e&&e.results&&e.results[0]&&e.results[0][0]&&e.results[0][0].transcript)||'';finish(true,String(text||'').trim())};rec.onerror=(e)=>finish(false,new Error((e&&e.error)?('Speech recognition: '+e.error):'Speech recognition failed'));rec.onend=()=>{if(!done)finish(false,new Error('No speech captured.'))};try{rec.start()}catch(err){finish(false,err)}setTimeout(()=>{try{rec.stop()}catch{}},ms||6000)})}
+async function startBrowserContinuousDictation(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)throw new Error('Browser speech recognition is unavailable.');if(state.speechRestartTimer){clearTimeout(state.speechRestartTimer);state.speechRestartTimer=null}if(state.speechRecognizer){try{state.speechRecognizer.stop()}catch{}state.speechRecognizer=null}state.speechBuffer='';state.speechStopRequested=false;const rec=new SR();rec.lang='en-IN';rec.interimResults=true;rec.continuous=true;rec.maxAlternatives=1;rec.onresult=(e)=>{let finalChunk='';for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];const txt=((r&&r[0]&&r[0].transcript)||'').trim();if(!txt)continue;if(r.isFinal)finalChunk+=(finalChunk?' ':'')+txt}if(finalChunk)state.speechBuffer+=(state.speechBuffer?' ':'')+finalChunk};rec.onerror=(e)=>{log('Speech recognition: '+(e&&e.error?e.error:'unknown'));if(state.speechStopRequested)return;toast('Speech recognition interrupted. Restarting...');};rec.onend=async()=>{if(!state.dictationActive)return;if(state.speechStopRequested){state.dictationActive=false;state.usingBrowserStt=false;if(state.speechBuffer.trim()){const english=await normalizeEnglishText(state.speechBuffer.trim());appendClinicalTranscript(english);log({voice_transcribed_browser:english});toast('Voice captured into Clinical Voice/Text Input.')}state.speechRecognizer=null;state.speechStopRequested=false;setMicUi(state.micOn?'connected':'off');return}state.speechRestartTimer=setTimeout(()=>{try{if(state.speechRecognizer&&state.dictationActive&&!state.speechStopRequested)state.speechRecognizer.start()}catch{}},120)};state.speechRecognizer=rec;state.usingBrowserStt=true;state.dictationActive=true;setMicUi('recording');try{rec.start()}catch(err){state.speechRecognizer=null;state.usingBrowserStt=false;state.dictationActive=false;setMicUi(state.micOn?'connected':'off');throw err}}
+function stopBrowserContinuousDictation(){if(!state.speechRecognizer)return;state.speechStopRequested=true;if(state.speechRestartTimer){clearTimeout(state.speechRestartTimer);state.speechRestartTimer=null}try{state.speechRecognizer.stop()}catch{}}
+async function transcribeRecordedAudio(blob){try{const fd=new FormData();fd.append('file',blob,'doctor_note.webm');const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),12000);let d=null;try{d=await parse(await fetch('/api/transcribe',{method:'POST',body:fd,signal:ctrl.signal}))}finally{clearTimeout(timer)}if(d.warning){toast(d.warning)}const t=(d.transcript||'').trim();if(t){appendClinicalTranscript(t);log({voice_transcribed:t,confidence:d.confidence});toast('Voice captured into Clinical Voice/Text Input.');return}throw new Error('Empty transcript from API')}catch(err){log('API STT fallback -> browser recognizer');try{const t=await browserSpeechToText(6000);if(!t)throw new Error('No speech recognized.');const english=await normalizeEnglishText(t);appendClinicalTranscript(english);log({voice_transcribed_browser:english});toast('Voice captured (browser STT).')}catch(e2){throw new Error((err&&err.message?err.message:'Transcription failed')+' | '+(e2&&e2.message?e2.message:String(e2)))}}}
+function pickRecorderMime(){if(!window.MediaRecorder||!MediaRecorder.isTypeSupported)return '';const c=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg','video/webm;codecs=opus'];for(const t of c){if(MediaRecorder.isTypeSupported(t))return t}return '';}
+async function captureMicForTranscription(){if(!state.micStream)await micToggle();if(window.MediaRecorder&&state.micStream){state.recordChunks=[];const mime=pickRecorderMime();if(mime){state.recorder=new MediaRecorder(state.micStream,{mimeType:mime});state.dictationActive=true;state.usingBrowserStt=false;setMicUi('recording');state.recorder.ondataavailable=(e)=>{if(e.data&&e.data.size)state.recordChunks.push(e.data)};state.recorder.onstop=async()=>{try{if(state.recordChunks.length){const blob=new Blob(state.recordChunks,{type:mime});await transcribeRecordedAudio(blob)}else{log('No audio captured. Try speaking louder or checking mic permission.')}}catch(e){log(e.message||String(e));toast(e.message||String(e))}finally{state.dictationActive=false;state.usingBrowserStt=false;setMicUi(state.micOn?'connected':'off')}};state.recorder.start(1000);return}}await startBrowserContinuousDictation()}
+async function dictation(){if(state.dictationActive){if(state.usingBrowserStt){stopBrowserContinuousDictation();return}try{if(state.recorder&&state.recorder.state!=='inactive')state.recorder.stop()}catch{}return}try{if(!state.micOn)await micToggle();await captureMicForTranscription()}catch(e){state.dictationActive=false;state.usingBrowserStt=false;setMicUi(state.micOn?'connected':'off');log(e.message||String(e));toast(e.message||String(e))}}
+function mapDiagnosisFromText(dt){if(dt.includes('respiratory')||dt.includes('asthma')||dt.includes('cough'))state.selected.add(1);if(dt.includes('gastro')||dt.includes('stomach'))state.selected.add(2);if(dt.includes('musculo')||dt.includes('joint')||dt.includes('knee'))state.selected.add(3);if(dt.includes('neuro')||dt.includes('headache'))state.selected.add(4);if(dt.includes('derma')||dt.includes('skin'))state.selected.add(5);if(dt.includes('cardio')||dt.includes('hypertension')||dt.includes('bp'))state.selected.add(6);if(dt.includes('diabetes')||dt.includes('endocrine'))state.selected.add(7);if(dt.includes('urine')||dt.includes('genito'))state.selected.add(8);if(dt.includes('ent')||dt.includes('ear')||dt.includes('throat'))state.selected.add(9);if(dt.includes('ophthal')||dt.includes('eye'))state.selected.add(10);if(dt.includes('mental')||dt.includes('stress')||dt.includes('anxiety'))state.selected.add(11);if(!state.selected.size)state.selected.add(12)}
+function inferMedicinesFromDiagnosis(text){
+  const t=(text||'').toLowerCase();
+  if(t.includes('respiratory')||t.includes('cough')) return 'Steam inhalation, Tulsi-Ginger decoction, warm saline gargle';
+  if(t.includes('gastro')||t.includes('stomach')) return 'ORS, light diet, jeera-ajwain water';
+  if(t.includes('musculo')||t.includes('joint')||t.includes('knee')) return 'Dashmool/anti-inflammatory support, local warm compress';
+  if(t.includes('cardio')||t.includes('hypertension')) return 'Low-salt regimen support, regular BP monitoring';
+  if(t.includes('mental')||t.includes('stress')||t.includes('anxiety')) return 'Brahmi-based calming support, sleep hygiene';
+  return 'Prescribed as per clinical evaluation';
+}
+function buildComplaintNarrative(symptoms,diagnosis,fallback){
+  const s=(symptoms||'').trim();
+  const d=(diagnosis||'').trim();
+  const f=(fallback||'').trim();
+  if(s&&d)return `Patient presents with ${s}. Clinical impression suggests ${d}.`;
+  if(s)return `Patient presents with ${s}.`;
+  if(d)return `Clinical impression suggests ${d}.`;
+  return f.slice(0,260);
+}
+async function summarizeInput(){const tx=el('rawTranscript').value.trim();if(!tx)throw new Error('Enter or record text first.');const s=await parse(await fetch('/api/consultation/summarize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({transcription:tx})}));const txEn=(s.transcription_english||'').toString().trim();if(txEn)el('rawTranscript').value=txEn;state.lastSummary=s.summary||{};const summary=state.lastSummary||{};const symptoms=(summary.symptoms||'').toString().trim();const diagnosis=(summary.diagnosis||'').toString().trim();const recommendation=(summary.recommendation||'').toString().trim();const packed=(symptoms+' '+diagnosis+' '+recommendation).trim();el('complaint').value=buildComplaintNarrative(symptoms,diagnosis,txEn||tx);state.selected.clear();mapDiagnosisFromText(packed.toLowerCase());if(!el('medicines').value.trim())el('medicines').value=inferMedicinesFromDiagnosis(diagnosis||packed);if(recommendation)el('advice').value=recommendation;if(diagnosis||symptoms)el('notes').value='AI Summary: '+[diagnosis,symptoms].filter(Boolean).join(' | ');renderPills();preview();log({summarized:true,autofill:true,provider:s.provider||'rules',summary:state.lastSummary});toast('Summarise completed. All report fields auto-filled. Review and click Finalize & Submit.')}
+function generateStructuredReport(){const summary=state.lastSummary||{};const symptoms=(summary.symptoms||'').toString();const diagnosis=(summary.diagnosis||'').toString();const recommendation=(summary.recommendation||'').toString();if(!symptoms&&!diagnosis&&!recommendation)throw new Error('No summary found. Click Summarise first.');el('complaint').value=buildComplaintNarrative(symptoms,diagnosis,el('rawTranscript').value||'');if(recommendation)el('advice').value=recommendation;if(diagnosis)el('notes').value='AI Summary: '+diagnosis;state.selected.clear();mapDiagnosisFromText((symptoms+' '+diagnosis+' '+recommendation).toLowerCase());renderPills();preview();log({structured_generated:true,summary});toast('Structured report generated and fields auto-filled.')}
+const notify=async(uhid,did,vid)=>parse(await fetch('/api/patient/notify-report-updated',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uhid:uhid,doctor_id:did,visit_id:vid||null})}));
+async function save(notifyPatient=false){const ids=resolveDoctorAndUhid();const did=ids.did,uhid=ids.uhid,doctorName=el('doctorName').value.trim()||localStorage.getItem('doctor_name')||'';if(!did)throw new Error('Doctor session missing. Please login again.');if(!uhid)throw new Error('Scan/load patient first before submit.');if(!el('complaint').value.trim())throw new Error('Complaint required.');if(!state.selected.size)throw new Error('Select diagnosis.');const notes=['Doctor ID: '+did,doctorName?('Doctor Name: '+doctorName):'',`Generated At: ${new Date().toISOString()}`,'Complaint: '+el('complaint').value.trim(),el('medicines').value.trim()?('Medicines: '+el('medicines').value.trim()):'',el('advice').value.trim()?('Advice: '+el('advice').value.trim()):'',el('notes').value.trim()?('Manual Notes: '+el('notes').value.trim()):''].filter(Boolean).join('\n');const v=await parse(await fetch('/api/create_visit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({UHID:uhid,Doctor_ID:did,Consultation_Type:'doctor',Visit_Notes:notes,Visit_Date:new Date().toISOString()})}));const dc=Array.from(state.selected).map((c)=>{const it=DIAG.find((x)=>x.c===c);return fetch('/api/create_diagnosis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({visit_id:v.visit_id,UHID:uhid,Disease_Category:c,Disease_Name:it?it.n:null,Severity:'moderate'})}).then(parse)});const rc=parse(await fetch('/api/create_recommendation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({visit_id:v.visit_id,UHID:uhid,Advice_Text:el('advice').value.trim()||'Follow doctor advice.',Confidence_Score:0.86})}));const [dx,re]=await Promise.all([Promise.all(dc),rc]);let manualUpload={uploaded:false};if(state.manualReportFile){const form=new FormData();form.append('uhid',uhid);form.append('visit_id',v.visit_id);form.append('doctor_id',did);form.append('note',el('notes').value.trim()||'');form.append('file',state.manualReportFile,state.manualReportFile.name||'manual_report.jpg');manualUpload=await parse(await fetch('/api/doctor/upload-manual-report',{method:'POST',body:form}))}state.lastSavedVisitId=v.visit_id;let nf={};if(notifyPatient){try{nf=await notify(uhid,did,v.visit_id)}catch(e){nf={warning:e&&e.message?e.message:String(e)};log({notify_warning:nf.warning})}}log({saved:true,visit:v,diagnosis:dx,recommendation:re,manual_report:manualUpload,notified:notifyPatient,notify:nf});toast(notifyPatient?'Report saved and sent to patient.':'Report saved.');await loadByUhid(uhid);await loadStats();['rawTranscript','complaint','medicines','advice','notes'].forEach((id)=>el(id).value='');el('manualReportFile').value='';state.manualReportFile=null;state.selected.clear();state.lastSummary=null;renderPills();preview();return v}
+function finalize(clearLog=true){state.history=[];state.patient=null;state.selected.clear();state.lastSavedVisitId=null;state.lastSummary=null;state.manualReportFile=null;['uhid','qrToken','scannerToken','rawTranscript','complaint','medicines','advice','notes'].forEach((id)=>el(id).value='');el('manualReportFile').value='';el('pName').textContent='Waiting for Patient';el('pMeta').textContent='UHID: - | Age: - | Blood Group: -';el('pLocation').textContent='Location: -';el('pFlags').textContent='Allergies/Chronic Conditions: -';el('patientCard').style.display='none';el('reportWidget').style.display='none';renderPills();renderHistory();preview();if(clearLog)log('Finalized. Patient details removed from this dashboard session.')}
+async function submitFinal(){const ids=resolveDoctorAndUhid();if(!ids.did)throw new Error('Doctor session missing. Please login again.');if(!ids.uhid)throw new Error('Scan/load patient first before submit.');await save(true);finalize(false);toast('Submitted successfully. Report updated and patient panel cleared.');log('Submitted successfully.')}
+function manualPick(e){const f=e.target.files&&e.target.files[0];if(!f){state.manualReportFile=null;preview();return}state.manualReportFile=f;log({manual_report_photo_selected:true,name:f.name,size:f.size,type:f.type});toast('Manual report photo attached. It will be saved with this visit.');preview()}
+el('doctorId').value=localStorage.getItem('doctor_id')||'';el('doctorName').value=localStorage.getItem('doctor_name')||'';syncDoctor();renderPills();preview();renderHistory();
+if(el('doctorId').value.trim() && !el('doctorName').value.trim()){loadProfile().then(()=>{el('doctorName').value=el('profileFullName').value||el('doctorName').value;syncDoctor();close('profileModal')}).catch(()=>null)}
+el('doctorId').addEventListener('input',syncDoctor);el('doctorName').addEventListener('input',syncDoctor);['rawTranscript','complaint','medicines','advice','notes','uhid'].forEach((id)=>el(id).addEventListener('input',preview));
+el('scanBtn').onclick=()=>withBusy('scanBtn','Opening...',async()=>{open('scannerModal');await startScannerCamera()}).catch((e)=>{setScanStatus(e.message||String(e),false);log(e.message||String(e))});el('scanLoadBtn').onclick=()=>withBusy('scanLoadBtn','Loading...',async()=>{const t=el('scannerToken').value.trim();if(t){await onScanSuccess(t);return}open('scannerModal');await startScannerCamera()}).catch((e)=>{setScanStatus(e.message||String(e),false);log(e.message||String(e))});el('startCameraBtn').onclick=()=>withBusy('startCameraBtn','Starting...',()=>startScannerCamera()).catch((e)=>{setScanStatus(e.message||String(e),false);log(e.message||String(e))});el('stopCameraBtn').onclick=()=>withBusy('stopCameraBtn','Stopping...',()=>stopScannerCamera()).catch((e)=>log(e.message||String(e)));el('confirmScanBtn').onclick=()=>withBusy('confirmScanBtn','Scanning...',()=>onScanSuccess(el('scannerToken').value.trim())).catch((e)=>{setScanStatus(e.message||String(e),false);log(e.message||String(e))});el('closeScannerBtn').onclick=()=>stopScannerCamera().then(()=>close('scannerModal'));el('searchBtn').onclick=()=>withBusy('searchBtn','Searching...',()=>loadByUhid(el('uhid').value.trim()).then(loadStats)).catch((e)=>log(e.message||String(e)));el('reportsBtn').onclick=()=>{const u=el('uhid').value.trim();if(!u){log('Enter or scan patient first to load reports.');return}withBusy('reportsBtn','Loading...',()=>loadByUhid(u).then(()=>{el('historyBody').scrollIntoView({behavior:'smooth'})})).catch((e)=>log(e.message||String(e)))};
+el('docAvatar').onclick=()=>loadProfile().catch((e)=>log(e.message||String(e)));el('closeProfileBtn').onclick=()=>close('profileModal');el('saveProfileBtn').onclick=()=>withBusy('saveProfileBtn','Saving...',()=>saveProfile()).catch((e)=>log(e.message||String(e)));
+el('micCheckBtn').onclick=()=>micStatusCheck().catch((e)=>log(e.message||String(e)));
+el('voiceBtn').onclick=async()=>{await dictation()};
+el('summarizeBtn').onclick=()=>withBusy('summarizeBtn','Summarising...',()=>summarizeInput()).catch((e)=>log(e.message||String(e)));el('structureBtn').onclick=()=>{try{generateStructuredReport()}catch(e){log(e.message||String(e))}};el('manualReportBtn').onclick=()=>el('manualReportFile').click();el('manualReportFile').addEventListener('change',manualPick);
+const approveBtn=el('approveBtn');if(approveBtn){approveBtn.onclick=()=>withBusy('approveBtn','Saving...',()=>save(true)).catch((e)=>log(e.message||String(e)))}el('finalizeBtn').onclick=()=>withBusy('finalizeBtn','Submitting...',()=>submitFinal()).catch((e)=>log(e.message||String(e)));
+if(el('doctorId').value.trim())loadStats().catch(()=>null);
+let notifyWs=null;function connectNotifications(){const did=el('doctorId').value.trim();if(!did)return;const token=(localStorage.getItem('doctor_token')||'').trim();if(!token){log('Doctor token missing. Login again for live notifications.');return}const proto=location.protocol==='https:'?'wss':'ws';notifyWs=new WebSocket(`${proto}://${location.host}/ws/notifications/doctor/${encodeURIComponent(did)}?token=${encodeURIComponent(token)}`);notifyWs.onopen=()=>log('Doctor notifications connected');notifyWs.onmessage=(e)=>{try{const p=JSON.parse(e.data);if(p.message)toast(p.message)}catch{}};notifyWs.onclose=()=>setTimeout(connectNotifications,1500)}connectNotifications();
+window.addEventListener('beforeunload',()=>{stopScannerCamera().catch(()=>null)});
+</script></body></html>
+
+

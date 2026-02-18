@@ -1,0 +1,16 @@
+body{font-family:Segoe UI,Tahoma,sans-serif;background:radial-gradient(circle at top right,#e5ebff,#f7f9ff);margin:0;padding:24px}
+.container{max-width:1200px;margin:0 auto}
+.card{background:#fff;border-radius:18px;box-shadow:0 18px 38px rgba(24,45,100,.12);padding:22px;margin-bottom:18px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.tabs{display:flex;gap:10px;margin-bottom:14px}
+.tab{padding:10px 16px;border-radius:12px;border:1px solid #8da4ff;background:#edf2ff;color:#12306b;font-weight:700;cursor:pointer}
+.tab.active{background:#1d3bf2;color:#fff;border-color:#1d3bf2;box-shadow:0 8px 18px rgba(29,59,242,.35)}
+.panel{display:none}
+.panel.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+input,button{padding:12px;border:1px solid #d5def8;border-radius:12px;font-size:14px}
+button{border:none;background:#2d4cf5;color:#fff;cursor:pointer;transition:.2s}
+button:hover{transform:translateY(-1px)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.out{white-space:pre-wrap;background:#f8faff;border:1px dashed #c7d3ff;padding:10px;border-radius:12px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}

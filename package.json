@@ -1,0 +1,14 @@
+{
+  "name": "ayush-healthcare-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --project=chromium-headed",
+    "test:e2e:headless": "playwright test --project=chromium-headless",
+    "test:e2e:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.2"
+  }
+}

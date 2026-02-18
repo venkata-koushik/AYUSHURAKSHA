@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doctor Access</title>
+  <style>
+    :root{--pri:#1b9c85;--pri-soft:#eafff8;--txt:#10443b;--muted:#4e726c;--line:#cfeee6}
+    *{box-sizing:border-box} body{margin:0;font-family:Segoe UI,Tahoma,sans-serif;background:linear-gradient(150deg,#effaf7,#e8fff8);color:var(--txt)}
+    .container{margin:0 auto;max-width:680px;padding:26px 18px}
+    .back{display:inline-block;margin-bottom:16px;padding:9px 14px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--txt);text-decoration:none}
+    h1{margin:0 0 6px;font-size:30px} p{margin:0 0 16px;color:var(--muted)}
+    .card{background:#fff;border:1px solid #dcf5ef;border-radius:16px;box-shadow:0 16px 36px rgba(0,64,50,.12);padding:18px}
+    .tabs{display:flex;gap:12px;margin-bottom:16px}
+    .tab{flex:1;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--pri-soft);font-weight:700;color:var(--txt);cursor:pointer}
+    .tab.active{background:var(--pri);color:#fff;border-color:var(--pri)}
+    .panel{display:none}.panel.active{display:block}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    input,button{width:100%;padding:12px 13px;border-radius:12px;font-size:14px}
+    input{border:1px solid var(--line)} input:focus{outline:none;box-shadow:0 0 0 3px rgba(27,156,133,.2)}
+    .btn{border:0;background:var(--pri);color:#fff;font-weight:700;cursor:pointer;margin-top:12px}
+    .btn.secondary{background:#fff;color:var(--pri);border:1px solid var(--pri)}
+    .btn.ghost{background:#f5fffc;color:#1f6b5f;border:1px solid var(--line)}
+    .inline-link{display:inline-block;color:#1f6b5f;font-weight:600;cursor:pointer;margin-top:10px;text-decoration:underline}
+    .divider{height:1px;background:#e4f6f1;margin:14px 0}
+    .otp-block{margin-top:12px}.hidden{display:none}
+    .status{margin-top:12px;background:#f3fffc;border:1px dashed #b7e5dc;border-radius:12px;padding:10px;white-space:pre-wrap;min-height:52px}
+    @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="container">
+    <a class="back" href="/select-role">Back</a>
+    <h1>Doctor Access</h1>
+    <p>Login, register, and password recovery.</p>
+
+    <section class="card">
+      <div class="tabs">
+        <button id="tLogin" class="tab active">Login</button>
+        <button id="tRegister" class="tab">Create Account</button>
+      </div>
+
+      <section id="loginPanel" class="panel active">
+        <h3>Login to Your Account</h3>
+        <div class="grid">
+          <input id="identifier" placeholder="Email or Phone" />
+          <input id="login_password" type="password" placeholder="Password *" />
+        </div>
+        <a id="openForgot" class="inline-link" href="/forgot-password?role=doctor">Forgot Password?</a>
+        <button id="loginBtn" class="btn">Login</button>
+        <div class="divider"></div>
+        <button id="goRegister" class="btn secondary">Create Account</button>
+      </section>
+
+      <section id="registerPanel" class="panel">
+        <h3>Create New Account</h3>
+        <div class="grid">
+          <input id="full_name" placeholder="Full Name" />
+          <input id="government_license_id" placeholder="Government License ID" />
+          <input id="email" placeholder="Email" />
+          <input id="phone" placeholder="Phone" />
+          <input id="address" placeholder="Address" />
+          <input id="password" type="password" placeholder="Password" />
+          <input id="confirm_password" type="password" placeholder="Confirm Password" />
+        </div>
+        <button id="sendOtpBtn" class="btn ghost">Send OTP</button>
+        <div id="otpWrap" class="otp-block hidden"><input id="otp" placeholder="Enter OTP" /></div>
+        <button id="regBtn" class="btn">Verify & Register</button>
+        <div class="divider"></div>
+        <button id="goLogin" class="btn secondary">Login Instead</button>
+      </section>
+
+      <section id="forgotPanel" class="panel">
+        <h3>Reset Your Password</h3>
+        <div class="grid">
+          <input id="reset_identifier" placeholder="Registered Email" />
+          <input id="reset_otp" placeholder="OTP" />
+          <input id="new_password" type="password" placeholder="New Password" />
+        </div>
+        <button id="sendForgotOtpBtn" class="btn ghost">Send OTP</button>
+        <button id="resetBtn" class="btn">Reset Password</button>
+        <div class="divider"></div>
+        <button id="backToLogin" class="btn secondary">Back to Login</button>
+      </section>
+
+      <pre id="out" class="status"></pre>
+    </section>
+  </main>
+
+  <script>
+    function show(v){ out.textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2); }
+    function req(arr){ return arr.every(v => v && String(v).trim()); }
+    async function read(res){
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { detail: txt || `HTTP ${res.status}` }; }
+      if(!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : (txt || `HTTP ${res.status}`));
+      return data;
+    }
+    (function applyResetPrefill(){
+      try {
+        const payload = JSON.parse(sessionStorage.getItem('reset_prefill_doctor') || '{}');
+        if (!payload || payload.role !== 'doctor') return;
+        if (payload.identifier) identifier.value = payload.identifier;
+        if (payload.password) login_password.value = payload.password;
+        show('Password reset successful. Please click Login.');
+        sessionStorage.removeItem('reset_prefill_doctor');
+      } catch {}
+    })();
+
+    function setPanel(name){
+      loginPanel.classList.remove('active'); registerPanel.classList.remove('active'); forgotPanel.classList.remove('active');
+      tLogin.classList.remove('active'); tRegister.classList.remove('active');
+      if(name==='login'){ loginPanel.classList.add('active'); tLogin.classList.add('active'); }
+      if(name==='register'){ registerPanel.classList.add('active'); tRegister.classList.add('active'); }
+      if(name==='forgot'){ forgotPanel.classList.add('active'); }
+    }
+    tLogin.onclick=()=>setPanel('login'); tRegister.onclick=()=>setPanel('register'); goRegister.onclick=()=>setPanel('register'); goLogin.onclick=()=>setPanel('login'); backToLogin.onclick=()=>setPanel('login');
+
+    sendOtpBtn.onclick = async () => {
+      if(!email.value.trim()) return show('Enter doctor email first.');
+      otpWrap.classList.remove('hidden');
+      try{
+        const d = await read(await fetch('/api/send-registration-otp',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({identifier:email.value.trim(), channel:'email'})
+        }));
+        if (d.otp_debug) show({status:'otp_sent', expires_at:d.expires_at, otp_debug:d.otp_debug});
+        else show(d);
+      }catch(e){
+        show(e.message || String(e));
+      }
+    };
+
+    loginBtn.onclick = async () => {
+      if(!req([identifier.value,login_password.value])) return show('Please enter email/phone and password.');
+      const r = await fetch('/api/doctor/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifier:identifier.value,password:login_password.value})});
+      try{ const d = await read(r); show(d); console.log('doctor login working', d); if(d.doctor_id){ localStorage.setItem('doctor_id',d.doctor_id); if(d.token) localStorage.setItem('doctor_token', d.token); location.href='/doctor/dashboard'; } }catch(e){ show(e.message); }
+    };
+
+    regBtn.onclick = async () => {
+      if(!req([full_name.value,government_license_id.value,email.value,phone.value,address.value,password.value,confirm_password.value,otp.value])) return show('Please fill all required registration fields.');
+      if(password.value !== confirm_password.value) return show('Password mismatch.');
+      const body = {full_name:full_name.value,government_license_id:government_license_id.value,otp:otp.value,email:email.value,phone:phone.value,address:address.value,password:password.value,confirm_password:confirm_password.value};
+      const r = await fetch('/api/doctor/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      try{ const d = await read(r); show(d); console.log('doctor register working', d); if(d.doctor_id){ localStorage.setItem('doctor_id',d.doctor_id); setPanel('login'); identifier.value=email.value; login_password.value=password.value; } }catch(e){ show(e.message); }
+    };
+
+    sendForgotOtpBtn.onclick = async () => {
+      if(!reset_identifier.value) return show('Enter registered email.');
+      const r = await fetch('/api/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifier:reset_identifier.value,channel:'email',role:'doctor'})});
+      try{ const d = await read(r); show(d); console.log('doctor forgot otp sent', d); }catch(e){ show(e.message); }
+    };
+
+    resetBtn.onclick = async () => {
+      if(!req([reset_identifier.value,reset_otp.value,new_password.value])) return show('Fill all reset fields.');
+      const r = await fetch('/api/patient/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifier:reset_identifier.value,otp:reset_otp.value,new_password:new_password.value,role:'doctor'})});
+      try{ const d = await read(r); show(d); console.log('doctor reset done', d); setPanel('login'); }catch(e){ show(e.message); }
+    };
+  </script>
+</body>
+</html>
+
+

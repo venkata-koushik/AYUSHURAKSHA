@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Senior Medical Student Consultant Access</title>
+  <style>
+    :root{--pri:#ff5a1f;--pri-soft:#fff1ea;--txt:#6b2d12;--muted:#8a4a2a;--line:#ffd1c2}
+    *{box-sizing:border-box} body{margin:0;font-family:Segoe UI,Tahoma,sans-serif;background:linear-gradient(145deg,#fff7ef,#fff1e5);color:var(--txt)}
+    .container{margin:0 auto;max-width:700px;padding:26px 18px}
+    .back{display:inline-block;margin-bottom:16px;padding:9px 14px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--txt);text-decoration:none}
+    h1{margin:0 0 6px;font-size:30px} p{margin:0 0 16px;color:var(--muted)}
+    .card{background:#fff;border:1px solid #ffe5d4;border-radius:16px;box-shadow:0 18px 36px rgba(124,60,13,.13);padding:18px}
+    .tabs{display:flex;gap:12px;margin-bottom:16px}
+    .tab{flex:1;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--pri-soft);font-weight:700;color:var(--txt);cursor:pointer}
+    .tab.active{background:var(--pri);color:#fff;border-color:var(--pri)}
+    .panel{display:none}.panel.active{display:block}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    input,button{width:100%;padding:12px 13px;border-radius:12px;font-size:14px}
+    input{border:1px solid var(--line)} input:focus{outline:none;box-shadow:0 0 0 3px rgba(255,90,31,.22)}
+    .btn{border:0;background:var(--pri);color:#fff;font-weight:700;cursor:pointer;margin-top:12px;min-height:50px}
+    .btn.secondary{background:#fff;color:var(--pri);border:1px solid var(--pri)}
+    .btn.ghost{background:#fff9f3;color:#a35a2a;border:1px solid var(--line)}
+    .inline-link{display:inline-block;color:#a35a2a;font-weight:600;cursor:pointer;margin-top:10px;text-decoration:underline}
+    .divider{height:1px;background:#ffe8da;margin:14px 0}
+    .otp-block{margin-top:12px}.hidden{display:none}
+    .status{margin-top:12px;background:#fff9f2;border:1px dashed #ffd2b6;border-radius:12px;padding:10px;white-space:pre-wrap;min-height:56px}
+    @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="container">
+    <a class="back" href="/select-role">Back</a>
+    <h1>Senior Medical Student Login</h1>
+    <p>No popups. Inline status only.</p>
+
+    <section class="card">
+      <div class="tabs">
+        <button id="tLogin" class="tab active">Login</button>
+        <button id="tRegister" class="tab">Create Account</button>
+      </div>
+
+      <section id="loginPanel" class="panel active">
+        <h3>Login to Your Account</h3>
+        <div class="grid">
+          <input id="login_identifier" placeholder="Institutional Email or Phone" />
+          <input id="login_password" type="password" placeholder="Password" />
+        </div>
+        <a id="openForgot" class="inline-link" href="/forgot-password?role=student">Forgot Password?</a>
+        <button id="loginBtn" class="btn">Login</button>
+        <div class="divider"></div>
+        <button id="goRegister" class="btn secondary">Create Account</button>
+      </section>
+
+      <section id="registerPanel" class="panel">
+        <h3>Create New Account</h3>
+        <div class="grid">
+          <input id="college_id" placeholder="College ID (e.g. COLL-5001)" />
+          <input id="institute_name" placeholder="Institute Name (e.g. AYUSH Medical College)" />
+          <input id="official_email" placeholder="Official Email" />
+          <input id="phone" placeholder="Phone Number" />
+          <input id="password" type="password" placeholder="Set Password" />
+          <input id="confirm_password" type="password" placeholder="Confirm Password" />
+        </div>
+        <button id="verify" class="btn ghost">Send OTP</button>
+        <div id="regOtpBlock" class="otp-block hidden"><input id="otp" placeholder="Enter OTP" /></div>
+        <button id="create" class="btn">Verify & Register</button>
+        <div class="divider"></div>
+        <button id="goLogin" class="btn secondary">Login Instead</button>
+      </section>
+
+      <pre id="out" class="status"></pre>
+    </section>
+  </main>
+
+  <script>
+    function outMsg(v){ out.textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2); }
+    function req(arr){ return arr.every(v => v && String(v).trim()); }
+    async function read(res){
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { detail: txt || `HTTP ${res.status}` }; }
+      if(!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : (txt || `HTTP ${res.status}`));
+      return data;
+    }
+
+    function setPanel(name){
+      loginPanel.classList.remove('active'); registerPanel.classList.remove('active');
+      tLogin.classList.remove('active'); tRegister.classList.remove('active');
+      if(name==='login'){ loginPanel.classList.add('active'); tLogin.classList.add('active'); }
+      if(name==='register'){ registerPanel.classList.add('active'); tRegister.classList.add('active'); }
+    }
+
+    tLogin.onclick=()=>setPanel('login'); tRegister.onclick=()=>setPanel('register'); goRegister.onclick=()=>setPanel('register'); goLogin.onclick=()=>setPanel('login');
+
+    verify.onclick = async () => {
+      if(!req([college_id.value, institute_name.value, official_email.value])) return outMsg('Enter college ID, institute name and official email.');
+      const r = await fetch('/api/student/verify-college',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({college_id:college_id.value,institute_name:institute_name.value,official_email:official_email.value})});
+      try{
+        const d = await read(r);
+        regOtpBlock.classList.remove('hidden');
+        if (d.otp_debug) outMsg({status:'otp_sent', expires_at:d.expires_at, otp_debug:d.otp_debug});
+        else outMsg({status:'otp_sent', expires_at:d.expires_at});
+        console.log('student verify', d);
+      }catch(e){ outMsg(e.message); }
+    };
+
+    create.onclick = async () => {
+      if(!req([college_id.value, institute_name.value, official_email.value, phone.value, password.value, confirm_password.value, otp.value])) return outMsg('Fill all required fields.');
+      if(password.value !== confirm_password.value) return outMsg('Password mismatch.');
+      const c = await fetch('/api/student/confirm-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({college_id:college_id.value,otp:otp.value})});
+      try{ await read(c); }catch(e){ return outMsg(e.message); }
+      const r = await fetch('/api/student/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({college_id:college_id.value,institute_name:institute_name.value,official_email:official_email.value,phone:phone.value,password:password.value})});
+      try{ const d = await read(r); outMsg(d); console.log('student register', d); setPanel('login'); login_identifier.value=official_email.value; login_password.value=password.value; }catch(e){ outMsg(e.message); }
+    };
+
+    loginBtn.onclick = async () => {
+      if(!req([login_identifier.value,login_password.value])) return outMsg('Please enter email/phone and password.');
+      const r = await fetch('/api/student/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifier:login_identifier.value,password:login_password.value})});
+      try{ const d = await read(r); outMsg(d); console.log('student login', d); if(d.student_id){ localStorage.setItem('student_id', d.student_id); if(d.token) localStorage.setItem('student_token', d.token); location.href='/student/dashboard'; } }catch(e){ outMsg(`Invalid credentials. ${e.message}`); }
+    };
+
+  </script>
+</body>
+</html>
+
+

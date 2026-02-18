@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patient Notifications</title>
+  <style>
+    body { margin: 0; font-family: "Poppins", "Inter", sans-serif; background: #f4f7fb; color: #183452; }
+    .page { max-width: 840px; margin: 0 auto; padding: 18px; }
+    .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .back { border: 0; border-radius: 10px; padding: 10px 12px; background: #fff; cursor: pointer; }
+    .list { background: #fff; border-radius: 14px; padding: 14px; box-shadow: 0 8px 20px rgba(17,56,97,0.09); }
+    .item { border: 1px solid #dce8f6; border-radius: 10px; padding: 10px; margin-bottom: 8px; }
+    .item.clickable { cursor: pointer; transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease; }
+    .item.clickable:hover { border-color:#b9d2f2; box-shadow:0 8px 18px rgba(32,73,120,.12); transform:translateY(-1px); }
+    .item p { margin: 0 0 5px; }
+    .item small { color: #4b6785; }
+    .item button { margin-top: 6px; border: 1px solid #c7dbf5; background: #edf5ff; color: #1a4f8d; border-radius: 8px; padding: 6px 8px; cursor: pointer; font-weight: 700; font-size: 12px; }
+    .toast{position:fixed;right:14px;bottom:14px;background:#111827;color:#fff;padding:10px 12px;border-radius:10px;display:none;max-width:320px;box-shadow:0 10px 24px rgba(0,0,0,.24)}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="top">
+      <button class="back" type="button" onclick="location.href='/patient/dashboard'">&#8592; Back</button>
+      <strong>Notifications</strong>
+    </div>
+
+    <section class="list" id="list"></section>
+  </main>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const patientId = localStorage.getItem('patient_id');
+    const patientToken = localStorage.getItem('patient_token') || '';
+    const list = document.getElementById('list');
+    const toast = (m)=>{ const t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; setTimeout(()=>t.style.display='none', 2400); };
+
+    async function parse(res) {
+      const txt = await res.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch { data = { detail: txt || ('HTTP ' + res.status) }; }
+      if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : (txt || ('HTTP ' + res.status)));
+      return data;
+    }
+
+    let lastTopSig = '';
+    async function load(source = 'manual') {
+      if (!patientId) throw new Error('No patient session.');
+      const data = await parse(await fetch('/api/patient/notifications?patient_id=' + encodeURIComponent(patientId)));
+      console.log('patient notifications working', data);
+      if (!Array.isArray(data) || !data.length) {
+        list.innerHTML = '<p>No notifications available.</p>';
+        return;
+      }
+      const top = data[0] || {};
+      const topSig = [top.message || '', top.created_at || '', top.visit_id || '', top.category || ''].join('|');
+      if (source === 'poll' && lastTopSig && topSig && topSig !== lastTopSig) {
+        toast(top.message || 'New notification received.');
+      }
+      lastTopSig = topSig;
+      list.innerHTML = data.map((n, idx) => {
+        const visitId = n.visit_id || '';
+        return '<article class="item' + (visitId ? ' clickable' : '') + '" data-idx="' + idx + '"' + (visitId ? (' data-visit="' + visitId + '"') : '') + '>'
+          + '<p>' + (n.message || 'Notification') + '</p>'
+          + '<small>' + (n.created_at || '') + (n.category ? (' | ' + n.category) : '') + '</small>'
+          + (visitId ? ('<div><button type="button" data-visit="' + visitId + '">Open Updated Report</button></div>') : '')
+          + '</article>';
+      }).join('');
+      Array.from(list.querySelectorAll('article.item[data-visit]')).forEach((card) => {
+        card.addEventListener('click', (evt) => {
+          const target = evt.target;
+          if (target && target.tagName && String(target.tagName).toLowerCase() === 'button') return;
+          const visitId = card.getAttribute('data-visit') || '';
+          if (visitId) localStorage.setItem('focus_visit_id', visitId);
+          location.href = '/patient/reports';
+        });
+      });
+      Array.from(list.querySelectorAll('button[data-visit]')).forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const visitId = btn.getAttribute('data-visit') || '';
+          if (visitId) localStorage.setItem('focus_visit_id', visitId);
+          location.href = '/patient/reports';
+        });
+      });
+    }
+
+    load().catch((e) => { list.innerHTML = '<p>' + (e.message || String(e)) + '</p>'; });
+    setInterval(() => { load('poll').catch(() => null); }, 2500);
+
+    if (patientId && patientToken) {
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      let ws;
+      const connect = () => {
+        ws = new WebSocket(`${proto}://${location.host}/ws/notifications/patient/${encodeURIComponent(patientId)}?token=${encodeURIComponent(patientToken)}`);
+        ws.onmessage = async (evt) => {
+          try {
+            const payload = JSON.parse(evt.data);
+            if (payload.message) {
+              toast(payload.message);
+              await load();
+            }
+          } catch {}
+        };
+        ws.onclose = () => setTimeout(connect, 1500);
+      };
+      connect();
+    } else if (patientId && !patientToken) {
+      toast('Session token missing. Login again to enable live notifications.');
+    }
+  </script>
+</body>
+</html>
+
+
