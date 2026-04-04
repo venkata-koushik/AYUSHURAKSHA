@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doctor Login</title>
+  <link rel="stylesheet" href="/static/pages/styles-mpa.css" />
+</head>
+<body>
+  <main class="shell">
+    <div class="topnav"><a href="/select-role">Back</a><a href="/doctor/dashboard">Go Dashboard</a></div>
+    <section class="card">
+      <h2>Doctor Register</h2>
+      <div class="grid two">
+        <input id="full_name" placeholder="Full name" />
+        <input id="license_id" placeholder="Govt License ID" />
+        <input id="otp" placeholder="OTP (123456)" />
+        <input id="email" placeholder="Email" />
+        <input id="phone" placeholder="Phone" />
+        <input id="address" placeholder="Address" />
+        <input id="password" type="password" placeholder="Set Password" />
+        <input id="confirm_password" type="password" placeholder="Confirm Password" />
+      </div>
+      <button id="registerBtn">Register</button>
+      <div id="regOut" class="out"></div>
+    </section>
+
+    <section class="card">
+      <h2>Doctor Login</h2>
+      <div class="grid two">
+        <input id="username" placeholder="Username (email used as username)" />
+        <input id="login_password" type="password" placeholder="Password" />
+      </div>
+      <button id="loginBtn">Login</button>
+      <div id="loginOut" class="out"></div>
+    </section>
+  </main>
+  <script src="/static/pages/app-mpa.js"></script>
+  <script>
+    registerBtn.onclick = async () => {
+      try {
+         const out = await api("/api/doctor/register", {
+          full_name: full_name.value,
+          government_license_id: license_id.value,
+          otp: otp.value,
+          email: email.value,
+          phone: phone.value,
+          address: address.value,
+          password: password.value,
+          confirm_password: confirm_password.value
+        });
+        store.set("doctor_id", out.doctor_id);
+        showOut("regOut", out);
+        console.log("doctor register working", out);
+      } catch (e) { showOut("regOut", e.message); }
+    };
+
+    loginBtn.onclick = async () => {
+      try {
+        const out = await api("/api/doctor/login", { username: username.value, password: login_password.value });
+        store.set("doctor_id", out.doctor_id);
+        store.set("doctor_token", out.token);
+        showOut("loginOut", out);
+        console.log("doctor login working", out);
+        location.href = "/doctor/dashboard";
+      } catch (e) { showOut("loginOut", e.message); }
+    };
+  </script>
+</body>
+</html>
