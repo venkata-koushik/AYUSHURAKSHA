@@ -21,6 +21,10 @@ from app.services.realtime_service import chat_manager, notification_manager, si
 from app.services.security_service import security_service
 
 
+def _is_truthy(value: str | None) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _ensure_sqlite_columns() -> None:
     # Lightweight compatibility migration for local sqlite.
     if engine.url.get_backend_name() != "sqlite":
@@ -79,9 +83,15 @@ def create_app() -> FastAPI:
 
     Base.metadata.create_all(bind=engine)
     _ensure_sqlite_columns()
-    if os.getenv("SEED_DEMO_DATA", "false").strip().lower() in {"1", "true", "yes", "on"}:
+    if _is_truthy(os.getenv("SEED_DEMO_DATA", "false")):
         with db_session() as db:
             relational_service.seed_demo_records(db)
+    else:
+        # For local SQLite runs, ensure baseline auth/demo records exist so first run is usable.
+        auto_bootstrap_default = "true" if engine.url.get_backend_name() == "sqlite" else "false"
+        if _is_truthy(os.getenv("AUTO_BOOTSTRAP_DEMO", auto_bootstrap_default)):
+            with db_session() as db:
+                relational_service.seed_demo_records(db)
 
     scheduler = BackgroundScheduler()
 
